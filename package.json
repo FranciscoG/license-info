@@ -1,0 +1,26 @@
+{
+  "name": "license-info",
+  "version": "0.1.0",
+  "description": "Generate license information report for your project dependencies.",
+  "main": "./lib/index.js",
+  "bin": {
+    "license-info": "./lib/index.js"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/FranciscoG/license-info.git"
+  },
+  "keywords": [],
+  "author": "Francisco <info@franciscog.com> (https://github.com/FranciscoG)",
+  "license": "MIT",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/FranciscoG/license-info/issues"
+  },
+  "homepage": "https://github.com/FranciscoG/license-info#readme"
+}
