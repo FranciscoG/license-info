@@ -43,17 +43,16 @@
         padding: 2px 8px;
         border-radius: 12px;
         color: white;
-        font-size: 0.7rem;
+        font-size: 0.8rem;
         text-align: center;
-        text-transform: capitalize;
       }
-      .pill.direct {
+      .pill.dependency {
         background-color: #4caf50;
       }
       .pill.transitive {
         background-color: #2196f3;
       }
-      .pill.dev {
+      .pill.devDependency {
         background-color: #ff9800;
       }
       thead {
@@ -71,6 +70,14 @@
       .registry-link {
         font-size: 0.8rem;
       }
+      .hidden {
+        display: none;
+      }
+      details span {
+        padding-top: 0.5rem;
+        display: block;
+        padding-left: 1rem;
+      }
     </style>
   </head>
   <body>
@@ -87,12 +94,16 @@
       <fieldset>
         <legend>Filter by Dependency Type</legend>
         <label>
-          <input id="filterDirect" type="checkbox" value="direct" checked />
-          Direct <span id="directCount"></span>
+          <input id="filterDependency" type="checkbox" value="dependency" checked />
+          dependencies <span id="dependencyCount"></span>
+        </label>
+        <label>
+          <input id="filterDevDependency" type="checkbox" value="devDependency" checked />
+          devDependencies <span id="devDependencyCount"></span>
         </label>
         <label>
           <input id="filterTransitive" type="checkbox" value="transitive" checked />
-          Transitive <span id="transitiveCount"></span>
+          transitive dependencies <span id="transitiveCount"></span>
         </label>
       </fieldset>
     </form>
@@ -123,35 +134,29 @@
           </details>
         </td>
         <td>
-          <a class="registry-link" target="_blank" href="https://www.npmjs.com/package/{{name}}">npm</a>
+          <a class="registry-link" target="_blank" href="https://www.npmjs.com/package/{{name}}"
+            >npm</a
+          >
         </td>
         <td class="pkg-version">{{version}}</td>
         <td class="pkg-license">{{licenseLink}}</td>
         <td class="type-cell">
           <span class="pill {{type}}">{{type}}</span>
-          <span class="pill dev">dev</span>
         </td>
       </tr>
     </template>
     <script>
-			const UNKNOWN_LICENSE = "UNKNOWN";
+      const UNKNOWN_LICENSE = "UNKNOWN";
       /**
        * @type {Record<string, number>}
        */
       let licenseCount = { MIT: 12, "Apache-2.0": 8, "GPL-3.0": 3, UNKNOWN: 5 };
       /* {{licenseCount}} */
 
-      let directCount = 5;
-      let transitiveCount = 23;
-      /* {{directCount}} */
-      /* {{transitiveCount}} */
-
       let licenseData = [
         {
           name: "@11ty/dependency-tree",
           license: "MIT",
-          isDev: false,
-          fromDev: false,
           version: "4.0.0",
           type: "transitive",
           tree: ["@11ty/eleventy@3.1.2", "@11ty/dependency-tree@4.0.0"],
@@ -159,8 +164,6 @@
         {
           name: "@11ty/dependency-tree-esm",
           license: "MIT",
-          isDev: false,
-          fromDev: false,
           version: "2.0.0",
           type: "transitive",
           tree: ["@11ty/eleventy@3.1.2", "@11ty/dependency-tree-esm@2.0.0"],
@@ -168,86 +171,72 @@
         {
           name: "@11ty/eleventy",
           license: "MIT",
-          isDev: true,
-          fromDev: false,
           version: "3.1.2",
-          type: "direct",
+          type: "dependency",
           tree: ["@11ty/eleventy@3.1.2"],
         },
         {
           name: "@11ty/eleventy-dev-server",
           license: "MIT",
-          isDev: false,
-          fromDev: false,
           version: "2.0.8",
-          type: "transitive",
+          type: "devDependency",
           tree: ["@11ty/eleventy@3.1.2", "@11ty/eleventy-dev-server@2.0.8"],
         },
         {
           name: "@11ty/eleventy-fetch",
           license: "MIT",
-          isDev: false,
-          fromDev: false,
           version: "5.1.0",
-          type: "transitive",
+          type: "devDependency",
           tree: ["@11ty/eleventy-img@6.0.4", "@11ty/eleventy-fetch@5.1.0"],
         },
         {
           name: "@11ty/eleventy-img",
           license: "MIT",
-          isDev: true,
-          fromDev: false,
           version: "6.0.4",
-          type: "direct",
+          type: "dependency",
           tree: ["@11ty/eleventy-img@6.0.4"],
         },
         {
           name: "@11ty/eleventy-navigation",
           license: "MIT",
-          isDev: true,
-          fromDev: false,
           version: "1.0.4",
-          type: "direct",
+          type: "dependency",
           tree: ["@11ty/eleventy-navigation@1.0.4"],
         },
         {
           name: "@11ty/eleventy-plugin-bundle",
           license: "MIT",
-          isDev: true,
-          fromDev: false,
           version: "3.0.6",
-          type: "direct",
+          type: "dependency",
           tree: ["@11ty/eleventy@3.1.2", "@11ty/eleventy-plugin-bundle@3.0.6"],
         },
         {
           name: "@11ty/eleventy-plugin-rss",
           license: "MIT",
-          isDev: true,
-          fromDev: false,
           version: "2.0.4",
-          type: "direct",
+          type: "dependency",
           tree: ["@11ty/eleventy-plugin-rss@2.0.4"],
         },
         {
           name: "@11ty/eleventy-plugin-syntaxhighlight",
           license: "MIT",
-          isDev: true,
-          fromDev: false,
           version: "5.0.2",
-          type: "direct",
+          type: "dependency",
           tree: ["@11ty/eleventy-plugin-syntaxhighlight@5.0.2"],
         },
         {
           name: "@11ty/eleventy-utils",
           license: "MIT",
-          isDev: false,
-          fromDev: false,
           version: "2.0.7",
           type: "transitive",
           tree: ["@11ty/eleventy@3.1.2", "@11ty/eleventy-utils@2.0.7"],
         },
       ];
       /* {{licenseData}} */
+
+      const dependencyCount = licenseData.filter((item) => item.type === "dependency").length;
+      const devDependencyCount = licenseData.filter((item) => item.type === "devDependency").length;
+      const transitiveCount = licenseData.filter((item) => item.type === "transitive").length;
 
       function renderFilters() {
         const template = document.getElementById("filter-template");
@@ -261,7 +250,8 @@
           clone.querySelector("label").className = license === "UNKNOWN" ? "unknown-license" : "";
           container.appendChild(clone);
         }
-        document.getElementById("directCount").textContent = `(${directCount})`;
+        document.getElementById("dependencyCount").textContent = `(${dependencyCount})`;
+        document.getElementById("devDependencyCount").textContent = `(${devDependencyCount})`;
         document.getElementById("transitiveCount").textContent = `(${transitiveCount})`;
       }
       renderFilters();
@@ -330,86 +320,92 @@
         return spdxLink(license);
       }
 
-			function renderRows() {
-				const template = document.getElementById("row-template");
-				const tbody = document.getElementById("license-details-body");
-				tbody.innerHTML = "";
-				for (const info of licenseData) {
-					const clone = template.content.cloneNode(true);
-					clone.querySelector("tr").setAttribute("data-license", info.license);
-					clone.querySelector("tr").setAttribute("data-type", info.type);
-					clone.querySelector("summary").textContent = info.name;
-					clone.querySelector("details span").innerHTML = "";
-					info.tree.forEach((item, i) => {
-						const code = document.createElement("code");
-						code.style.paddingLeft = `${i * 20}px`;
-						code.textContent = item;
-						clone.querySelector("details span").appendChild(code);
-					});
-					clone.querySelector(".registry-link").href = `https://www.npmjs.com/package/${info.name}`;
-					clone.querySelector("td.pkg-version").textContent = info.version;
-					clone.querySelector("td.pkg-license").innerHTML = linkifyLicense(info.license);
-					clone.querySelector(".type-cell .pill:first-child").textContent = info.type;
-					clone.querySelector(".type-cell .pill:first-child").classList.add(info.type);
-					if (!info.isDev) {
-						clone.querySelector(".type-cell").removeChild(
-							clone.querySelector(".type-cell .pill.dev")
-						);
-					}
-					tbody.appendChild(clone);
-				}
-			}
-			renderRows();
+      function renderRows() {
+        const template = document.getElementById("row-template");
+        const tbody = document.getElementById("license-details-body");
+        tbody.innerHTML = "";
+        for (const info of licenseData) {
+          const clone = template.content.cloneNode(true);
+          clone.querySelector("tr").setAttribute("data-license", info.license);
+          clone.querySelector("tr").setAttribute("data-type", info.type);
+          clone.querySelector("summary").textContent = info.name;
+          clone.querySelector("details span").innerHTML = "";
+          info.tree.forEach((item, i) => {
+            const code = document.createElement("code");
+            code.style.paddingLeft = `${i * 20}px`;
+            code.textContent = item;
+            clone.querySelector("details span").appendChild(code);
+          });
+          clone.querySelector(".registry-link").href = `https://www.npmjs.com/package/${info.name}`;
+          clone.querySelector("td.pkg-version").textContent = info.version;
+          clone.querySelector("td.pkg-license").innerHTML = linkifyLicense(info.license);
 
-      /**
-       * This file contains the client-side JavaScript for filtering the license table.
-       * It will be inlined into the HTML report generated by buildHtmlReport.
-       */
+          clone.querySelector(".pill").classList.add(info.type);
+          clone.querySelector(".pill").textContent = info.type;
+          tbody.appendChild(clone);
+        }
+      }
+      renderRows();
+
       const $ = document.querySelector.bind(document);
       const $$ = document.querySelectorAll.bind(document);
 
-      function filterTable() {
-        setTimeout(() => {
-          /**
-           * @type {NodeListOf<HTMLInputElement>}
-           */
-          const checkedLicenseFilters = $$('.license-filters input[type="checkbox"]:checked');
+      /**
+       * @type {HTMLTableRowElement[]}
+       */
+      const rows = Array.from($$("#license-details-body tr"));
 
-          const checkedLicenses = Array.from(checkedLicenseFilters).map((cb) => cb.value);
+      /**
+       * @type {HTMLInputElement[]}
+       */
+      const checkboxes = Array.from($$('.license-filters input[type="checkbox"]'));
 
-          const showDirect = /** @type {HTMLInputElement} */ ($("#filterDirect")).checked;
+      /** @type {HTMLInputElement} */
+      const showDirectProd = $("#filterDependency");
 
-          const showTransitive = /** @type {HTMLInputElement} */ ($("#filterTransitive")).checked;
+      /** @type {HTMLInputElement} */
+      const showDirectDev = $("#filterDevDependency");
 
-          /**
-           * @type {NodeListOf<HTMLTableRowElement>}
-           */
-          const rows = $$("#license-details-body tr");
+      /** @type {HTMLInputElement} */
+      const showTransitive = $("#filterTransitive");
+
+      function filterTable(e) {
+        const checkedLicenseFilters = checkboxes.filter((cb) => cb.checked);
+        const checkedLicenses = new Set(checkedLicenseFilters.map((cb) => cb.value));
+
+        requestAnimationFrame(() => {
           rows.forEach((row) => {
             const license = row.getAttribute("data-license");
-            if (
+            const type = row.getAttribute("data-type");
+            const shouldShowDirectProd = showDirectProd.checked && type === "dependency";
+            const shouldShowDirectDev = showDirectDev.checked && type === "devDependency";
+            const shouldShowTransitive = showTransitive.checked && type === "transitive";
+            const shouldShow =
               license &&
-              checkedLicenses.includes(license) &&
-              ((showDirect && row.getAttribute("data-type") === "direct") ||
-                (showTransitive && row.getAttribute("data-type") === "transitive"))
-            ) {
-              row.style.display = "";
-            } else {
-              row.style.display = "none";
-            }
+              checkedLicenses.has(license) &&
+              (shouldShowDirectProd || shouldShowTransitive || shouldShowDirectDev);
+            row.classList.toggle("hidden", !shouldShow);
           });
-        }, 0);
+        });
       }
 
+      function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+          const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+          };
+          clearTimeout(timeout);
+          timeout = setTimeout(later, wait);
+        };
+      }
+
+      const debouncedFilterTable = debounce(filterTable, 100); // 100ms delay
+
       function attachFilterListeners() {
-        /**
-         * @type {NodeListOf<HTMLInputElement>}
-         */
-        const checkboxes = $$('.license-filters input[type="checkbox"]');
         checkboxes.forEach((checkbox) => {
-          checkbox.addEventListener("change", () => {
-            filterTable();
-          });
+          checkbox.addEventListener("change", debouncedFilterTable);
         });
 
         $("#selectAll")?.addEventListener("change", (e) => {
@@ -417,16 +413,14 @@
           checkboxes.forEach((checkbox) => {
             checkbox.checked = checked;
           });
-          filterTable();
+          debouncedFilterTable();
         });
 
-        $("#filterDirect")?.addEventListener("change", (e) => {
-          filterTable();
-        });
+        $("#filterDependency")?.addEventListener("change", debouncedFilterTable);
 
-        $("#filterTransitive")?.addEventListener("change", (e) => {
-          filterTable();
-        });
+        $("#filterDevDependency")?.addEventListener("change", debouncedFilterTable);
+
+        $("#filterTransitive")?.addEventListener("change", debouncedFilterTable);
       }
 
       document.addEventListener("DOMContentLoaded", attachFilterListeners);
