@@ -1,0 +1,6 @@
+tests/
+CHANGELOG.md
+.github/
+.vscode/
+.gitignore
+jsconfig.json
