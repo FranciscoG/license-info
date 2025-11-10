@@ -1,0 +1,429 @@
+<html>
+  <head>
+    <title>Dependency Licenses</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+      }
+      table {
+        border-collapse: collapse;
+      }
+      th,
+      td {
+        border: 1px solid #ddd;
+        padding: 8px;
+      }
+      tr:nth-child(even) {
+        background: #f4fbfd;
+      }
+      fieldset {
+        margin-bottom: 1rem;
+      }
+      legend {
+        font-weight: bold;
+      }
+
+      .license-filters {
+        column-count: 3;
+        column-gap: 20px;
+        border-top: 1px solid #ccc;
+        padding-top: 7px;
+      }
+      label {
+        display: block;
+        margin-bottom: 5px;
+      }
+      .type-cell {
+        white-space: nowrap;
+        gap: 5px;
+      }
+      .pill {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 12px;
+        color: white;
+        font-size: 0.8rem;
+        text-align: center;
+      }
+      .pill.dependency {
+        background-color: #4caf50;
+      }
+      .pill.transitive {
+        background-color: #2196f3;
+      }
+      .pill.devDependency {
+        background-color: #ff9800;
+      }
+      thead {
+        background-color: #f2f2f2;
+        position: sticky;
+        top: 0;
+      }
+      code {
+        display: block;
+      }
+      .unknown-license {
+        color: red;
+        font-weight: bold;
+      }
+      .registry-link {
+        font-size: 0.8rem;
+      }
+      .hidden {
+        display: none;
+      }
+      details span {
+        padding-top: 0.5rem;
+        display: block;
+        padding-left: 1rem;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Dependency Licenses</h1>
+    <form>
+      <fieldset>
+        <legend>Filter by License</legend>
+        <label>
+          <input id="selectAll" type="checkbox" value="ALL" checked />
+          Select All
+        </label>
+        <div class="license-filters"></div>
+      </fieldset>
+      <fieldset>
+        <legend>Filter by Dependency Type</legend>
+        <label>
+          <input id="filterDependency" type="checkbox" value="dependency" checked />
+          dependencies <span id="dependencyCount"></span>
+        </label>
+        <label>
+          <input id="filterDevDependency" type="checkbox" value="devDependency" checked />
+          devDependencies <span id="devDependencyCount"></span>
+        </label>
+        <label>
+          <input id="filterTransitive" type="checkbox" value="transitive" checked />
+          transitive dependencies <span id="transitiveCount"></span>
+        </label>
+      </fieldset>
+    </form>
+    <table>
+      <thead>
+        <tr>
+          <th>Package</th>
+          <th>Link</th>
+          <th>Version</th>
+          <th>License</th>
+          <th>Type</th>
+        </tr>
+      </thead>
+      <tbody id="license-details-body"></tbody>
+    </table>
+    <template id="filter-template">
+      <label>
+        <input type="checkbox" value="" checked />
+        <span class="license-name-count">{{license}} ({{count}})</span>
+      </label>
+    </template>
+    <template id="row-template">
+      <tr data-license="{{license}}" data-type="{{type}}">
+        <td class="pkg-name">
+          <details>
+            <summary>{{name}}</summary>
+            <span> {{tree}} </span>
+          </details>
+        </td>
+        <td>
+          <a class="registry-link" target="_blank" href="https://www.npmjs.com/package/{{name}}"
+            >npm</a
+          >
+        </td>
+        <td class="pkg-version">{{version}}</td>
+        <td class="pkg-license">{{licenseLink}}</td>
+        <td class="type-cell">
+          <span class="pill {{type}}">{{type}}</span>
+        </td>
+      </tr>
+    </template>
+    <script>
+      const UNKNOWN_LICENSE = "UNKNOWN";
+      /**
+       * @type {Record<string, number>}
+       */
+      let licenseCount = { MIT: 12, "Apache-2.0": 8, "GPL-3.0": 3, UNKNOWN: 5 };
+      /* {{licenseCount}} */
+
+      let licenseData = [
+        {
+          name: "@11ty/dependency-tree",
+          license: "MIT",
+          version: "4.0.0",
+          type: "transitive",
+          tree: ["@11ty/eleventy@3.1.2", "@11ty/dependency-tree@4.0.0"],
+        },
+        {
+          name: "@11ty/dependency-tree-esm",
+          license: "MIT",
+          version: "2.0.0",
+          type: "transitive",
+          tree: ["@11ty/eleventy@3.1.2", "@11ty/dependency-tree-esm@2.0.0"],
+        },
+        {
+          name: "@11ty/eleventy",
+          license: "MIT",
+          version: "3.1.2",
+          type: "dependency",
+          tree: ["@11ty/eleventy@3.1.2"],
+        },
+        {
+          name: "@11ty/eleventy-dev-server",
+          license: "MIT",
+          version: "2.0.8",
+          type: "devDependency",
+          tree: ["@11ty/eleventy@3.1.2", "@11ty/eleventy-dev-server@2.0.8"],
+        },
+        {
+          name: "@11ty/eleventy-fetch",
+          license: "MIT",
+          version: "5.1.0",
+          type: "devDependency",
+          tree: ["@11ty/eleventy-img@6.0.4", "@11ty/eleventy-fetch@5.1.0"],
+        },
+        {
+          name: "@11ty/eleventy-img",
+          license: "MIT",
+          version: "6.0.4",
+          type: "dependency",
+          tree: ["@11ty/eleventy-img@6.0.4"],
+        },
+        {
+          name: "@11ty/eleventy-navigation",
+          license: "MIT",
+          version: "1.0.4",
+          type: "dependency",
+          tree: ["@11ty/eleventy-navigation@1.0.4"],
+        },
+        {
+          name: "@11ty/eleventy-plugin-bundle",
+          license: "MIT",
+          version: "3.0.6",
+          type: "dependency",
+          tree: ["@11ty/eleventy@3.1.2", "@11ty/eleventy-plugin-bundle@3.0.6"],
+        },
+        {
+          name: "@11ty/eleventy-plugin-rss",
+          license: "MIT",
+          version: "2.0.4",
+          type: "dependency",
+          tree: ["@11ty/eleventy-plugin-rss@2.0.4"],
+        },
+        {
+          name: "@11ty/eleventy-plugin-syntaxhighlight",
+          license: "MIT",
+          version: "5.0.2",
+          type: "dependency",
+          tree: ["@11ty/eleventy-plugin-syntaxhighlight@5.0.2"],
+        },
+        {
+          name: "@11ty/eleventy-utils",
+          license: "MIT",
+          version: "2.0.7",
+          type: "transitive",
+          tree: ["@11ty/eleventy@3.1.2", "@11ty/eleventy-utils@2.0.7"],
+        },
+      ];
+      /* {{licenseData}} */
+
+      const dependencyCount = licenseData.filter((item) => item.type === "dependency").length;
+      const devDependencyCount = licenseData.filter((item) => item.type === "devDependency").length;
+      const transitiveCount = licenseData.filter((item) => item.type === "transitive").length;
+
+      function renderFilters() {
+        const template = document.getElementById("filter-template");
+        const container = document.querySelector(".license-filters");
+        container.innerHTML = "";
+        for (const [license, count] of Object.entries(licenseCount)) {
+          const clone = template.content.cloneNode(true);
+          clone.querySelector("input").value = license;
+          clone.querySelector("input").checked = true;
+          clone.querySelector(".license-name-count").innerHTML = `${license} (${count})`;
+          clone.querySelector("label").className = license === "UNKNOWN" ? "unknown-license" : "";
+          container.appendChild(clone);
+        }
+        document.getElementById("dependencyCount").textContent = `(${dependencyCount})`;
+        document.getElementById("devDependencyCount").textContent = `(${devDependencyCount})`;
+        document.getElementById("transitiveCount").textContent = `(${transitiveCount})`;
+      }
+      renderFilters();
+
+      /**
+       * Create an SPDX license link
+       * @param {string} id - License identifier
+       * @returns {string} HTML link to SPDX license page
+       */
+      const spdxLink = (id) =>
+        `<a target="_blank" href="https://spdx.org/licenses/${id}.html">${id}</a>`;
+      const spdxOperators = ["AND", "OR", "WITH"];
+      const spdxRegex = new RegExp(`\\s+(${spdxOperators.join("|")})\\s+`, "g");
+
+      /**
+       * Linkify a license name if possible to https://spdx.org/licenses/
+       *
+       * There are packages that handle parsing SPDX expressions
+       * (like https://www.npmjs.com/package/spdx-expression-parse)
+       * but because I want to keep this script dependency-free,
+       * I'm implementing a simple parser that handles the most common cases.
+       *
+       * @param {string} license
+       * @returns {string} HTML-formatted license with links
+       */
+      function linkifyLicense(license = "") {
+        if (
+          !license ||
+          license === UNKNOWN_LICENSE ||
+          license.includes("SEE LICENSE") ||
+          license === "UNLICENSED"
+        ) {
+          return license;
+        }
+
+        // Handle complex license expressions
+        // (BSD-2-Clause OR MIT OR Apache-2.0)
+        // (MIT AND CC0-1.0)
+        // (GPL-2.0+ WITH Bison-exception-2.2)
+        // for now it will not handle nested parentheses: (MIT AND (LGPL-2.1+ AND BSD-3-Clause))
+        if (license.startsWith("(") && license.endsWith(")")) {
+          // remove the outer parentheses and process the inner expression
+          const inner = license.slice(1, -1);
+
+          // if the inner expressions still contains parentheses, we won't try to parse it further
+          if (inner.includes("(")) {
+            // just link them to the main list of licenses and they can search there
+            return `<a target="_blank" href="https://spdx.org/licenses/">${license}</a>`;
+          }
+
+          // split by AND/OR/WITH and linkify each part and bring it back to
+          // together with the original operator
+          return inner
+            .split(spdxRegex)
+            .filter((x) => !!x.trim())
+            .map((part) => {
+              part = part.trim();
+              if (spdxOperators.includes(part)) {
+                return ` ${part} `;
+              }
+              return spdxLink(part);
+            })
+            .join("");
+        }
+
+        return spdxLink(license);
+      }
+
+      function renderRows() {
+        const template = document.getElementById("row-template");
+        const tbody = document.getElementById("license-details-body");
+        tbody.innerHTML = "";
+        for (const info of licenseData) {
+          const clone = template.content.cloneNode(true);
+          clone.querySelector("tr").setAttribute("data-license", info.license);
+          clone.querySelector("tr").setAttribute("data-type", info.type);
+          clone.querySelector("summary").textContent = info.name;
+          clone.querySelector("details span").innerHTML = "";
+          info.tree.forEach((item, i) => {
+            const code = document.createElement("code");
+            code.style.paddingLeft = `${i * 20}px`;
+            code.textContent = item;
+            clone.querySelector("details span").appendChild(code);
+          });
+          clone.querySelector(".registry-link").href = `https://www.npmjs.com/package/${info.name}`;
+          clone.querySelector("td.pkg-version").textContent = info.version;
+          clone.querySelector("td.pkg-license").innerHTML = linkifyLicense(info.license);
+
+          clone.querySelector(".pill").classList.add(info.type);
+          clone.querySelector(".pill").textContent = info.type;
+          tbody.appendChild(clone);
+        }
+      }
+      renderRows();
+
+      const $ = document.querySelector.bind(document);
+      const $$ = document.querySelectorAll.bind(document);
+
+      /**
+       * @type {HTMLTableRowElement[]}
+       */
+      const rows = Array.from($$("#license-details-body tr"));
+
+      /**
+       * @type {HTMLInputElement[]}
+       */
+      const checkboxes = Array.from($$('.license-filters input[type="checkbox"]'));
+
+      /** @type {HTMLInputElement} */
+      const showDirectProd = $("#filterDependency");
+
+      /** @type {HTMLInputElement} */
+      const showDirectDev = $("#filterDevDependency");
+
+      /** @type {HTMLInputElement} */
+      const showTransitive = $("#filterTransitive");
+
+      function filterTable(e) {
+        const checkedLicenseFilters = checkboxes.filter((cb) => cb.checked);
+        const checkedLicenses = new Set(checkedLicenseFilters.map((cb) => cb.value));
+
+        requestAnimationFrame(() => {
+          rows.forEach((row) => {
+            const license = row.getAttribute("data-license");
+            const type = row.getAttribute("data-type");
+            const shouldShowDirectProd = showDirectProd.checked && type === "dependency";
+            const shouldShowDirectDev = showDirectDev.checked && type === "devDependency";
+            const shouldShowTransitive = showTransitive.checked && type === "transitive";
+            const shouldShow =
+              license &&
+              checkedLicenses.has(license) &&
+              (shouldShowDirectProd || shouldShowTransitive || shouldShowDirectDev);
+            row.classList.toggle("hidden", !shouldShow);
+          });
+        });
+      }
+
+      function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+          const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+          };
+          clearTimeout(timeout);
+          timeout = setTimeout(later, wait);
+        };
+      }
+
+      const debouncedFilterTable = debounce(filterTable, 100); // 100ms delay
+
+      function attachFilterListeners() {
+        checkboxes.forEach((checkbox) => {
+          checkbox.addEventListener("change", debouncedFilterTable);
+        });
+
+        $("#selectAll")?.addEventListener("change", (e) => {
+          const checked = /** @type {HTMLInputElement} */ (e.target)?.checked;
+          checkboxes.forEach((checkbox) => {
+            checkbox.checked = checked;
+          });
+          debouncedFilterTable();
+        });
+
+        $("#filterDependency")?.addEventListener("change", debouncedFilterTable);
+
+        $("#filterDevDependency")?.addEventListener("change", debouncedFilterTable);
+
+        $("#filterTransitive")?.addEventListener("change", debouncedFilterTable);
+      }
+
+      document.addEventListener("DOMContentLoaded", attachFilterListeners);
+    </script>
+  </body>
+</html>
