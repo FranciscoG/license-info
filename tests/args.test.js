@@ -132,4 +132,32 @@ describe("parseArgs", () => {
       assert.equal(error.message, "Unexpected value without flag: file.html");
     }
   });
+
+  // some edge cases
+  it("should treat `--output=` as a dangling flag (current behavior)", () => {
+    const args = parseArgs(["--output="]);
+    // current implementation treats this as a dangling flag -> true
+    assert.deepEqual(args, { output: true });
+  });
+
+  it("flag with hyphen", () => {
+    const args = parseArgs(["--output", "--flag-with-hyphen"]);
+    // '--flag-with-hyphen' does not match the flag regex, so it's treated as a value
+    assert.deepEqual(args, { output: true, "flag-with-hyphen": true });
+  });
+
+  it("dotted token is treated as a value, not a flag", () => {
+    const args = parseArgs(["--output", "--not.a.flag"]);
+    assert.deepEqual(args, { output: "--not.a.flag" });
+  });
+
+  it("single-dash short flag is recognized", () => {
+    const args = parseArgs(["-p", "some=value"]);
+    assert.deepEqual(args, { p: "some=value" });
+  });
+
+  it("should accept a flag with numbers and underscores", () => {
+    const args = parseArgs(["--flag_123", "value"]);
+    assert.deepEqual(args, { flag_123: "value" });
+  });
 });
