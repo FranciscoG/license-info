@@ -2,6 +2,10 @@
 
 A zero dependency tool that generates a report of the licenses of all NPM packages in your project. It takes the output of `npm ls --all --json --long` and builds an interactive HTML page with the results. 
 
+## Requirement
+
+Requires npm v7 or higher.
+
 ## How to use
 
 ```sh
