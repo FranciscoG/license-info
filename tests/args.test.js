@@ -59,16 +59,8 @@ describe("getArgs", () => {
   });
 
   it(`should throw error if "--output" is missing value`, () => {
-    try {
-      getArgs(["--output"]);
-    } catch (error) {
-      assert.equal(error.message, "Missing value for --output");
-    }
-    try {
-      getArgs(["--output", "--open"]);
-    } catch (error) {
-      assert.equal(error.message, "Missing value for --output");
-    }
+    assert.throws(() => getArgs(["--output"]), { message: "Missing value for --output" });
+    assert.throws(() => getArgs(["--output", "--open"]), { message: "Missing value for --output" });
   });
 });
 
@@ -126,11 +118,9 @@ describe("parseArgs", () => {
   });
 
   it("should throw error for unexpected values without flags", () => {
-    try {
-      parseArgs(["file.html", "--open"]);
-    } catch (error) {
-      assert.equal(error.message, "Unexpected value without flag: file.html");
-    }
+    assert.throws(() => parseArgs(["file.html", "--open"]), {
+      message: "Unexpected value without flag: file.html",
+    });
   });
 
   // some edge cases
