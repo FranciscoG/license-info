@@ -117,3 +117,34 @@ describe("getFlattenedDependencies", () => {
     assert.deepEqual(result.licenseCount, { MIT: 5 });
   });
 });
+
+describe("initialize", () => {
+  it("should exit with code 0 when there are no dependencies to process", async () => {
+    const li = new LicenseInfo();
+    li.getAllDependencies = () => Promise.resolve({});
+
+    const originalExit = process.exit;
+    const originalConsoleLog = console.log;
+    const printedLogs = [];
+
+    process.exit = ((code) => {
+      throw new Error(`EXIT_${code}`);
+    });
+    console.log = ((...args) => {
+      printedLogs.push(args.join(" "));
+    });
+
+    try {
+      await assert.rejects(li.initialize(), {
+        message: "EXIT_0",
+      });
+
+      const output = printedLogs.join("\n");
+      assert.match(output, /No dependencies found/i);
+      assert.match(output, /package-lock\.json/i);
+    } finally {
+      process.exit = originalExit;
+      console.log = originalConsoleLog;
+    }
+  });
+});
