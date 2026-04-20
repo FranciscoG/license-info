@@ -52,10 +52,29 @@ describe("getArgs", () => {
   });
 
   // now we try and break it
-  it("should handle unexpected arguments gracefully", () => {
-    const args = getArgs(["--unknown", "--output", "file.html", "--open"]);
-    assert.equal(args.output, "file.html");
-    assert.equal(args.open, true);
+  it("should fail with unknown arguments", () => {
+    const originalExit = process.exit;
+    const originalConsoleError = console.error;
+    const printedErrors = [];
+
+    process.exit = ((code) => {
+      throw new Error(`EXIT_${code}`);
+    });
+    console.error = ((...args) => {
+      printedErrors.push(args.join(" "));
+    });
+
+    try {
+      assert.throws(() => getArgs(["--unknown", "--output", "file.html", "--open"]), {
+        message: "EXIT_1",
+      });
+      const output = printedErrors.join("\n");
+      assert.match(output, /Unknown argument: --unknown/i);
+      assert.match(output, /-h or --help/i);
+    } finally {
+      process.exit = originalExit;
+      console.error = originalConsoleError;
+    }
   });
 
   it(`should throw error if "--output" is missing value`, () => {
