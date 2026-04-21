@@ -1,6 +1,9 @@
 tests/
-CHANGELOG.md
+*.md
+!README.md
 .github/
 .vscode/
+.claude/
+.ai/
 .gitignore
 jsconfig.json
