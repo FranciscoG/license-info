@@ -28,5 +28,11 @@
     "taffydb": "2.7.3",
     "cycle": "1.0.3",
     "jsonify": "0.0.1"
+  },
+  "devDependencies": {
+    "mocha": "10.4.0",
+    "chai": "5.1.1",
+    "prettier": "3.2.5",
+    "c8": "9.1.0"
   }
 }

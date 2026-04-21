@@ -148,6 +148,48 @@ describe("getFlattenedDependencies", () => {
     const result = li.getFlattenedDependencies({}, [], {}, { MIT: 5 });
     assert.deepEqual(result.licenseCount, { MIT: 5 });
   });
+
+  it("should count shared transitives in both scopes when invoked twice", () => {
+    const li = new LicenseInfo();
+    li.output = {
+      dependencies: {},
+      devDependencies: {},
+      _dependencies: { "prod-root": "^1.0.0" },
+    };
+    li.output.devDependencies = { "dev-root": "^1.0.0" };
+
+    const prodDeps = {
+      "prod-root": {
+        license: "MIT",
+        version: "1.0.0",
+        dependencies: {
+          shared: { license: "MIT", version: "2.0.0", dependencies: {} },
+        },
+      },
+    };
+    const devDeps = {
+      "dev-root": {
+        license: "ISC",
+        version: "1.0.0",
+        dependencies: {
+          shared: { license: "MIT", version: "2.0.0", dependencies: {} },
+        },
+      },
+    };
+
+    const licenses = {};
+    const prodCount = {};
+    const devCount = {};
+    li.getFlattenedDependencies(prodDeps, [], licenses, prodCount);
+    li.getFlattenedDependencies(devDeps, [], licenses, devCount);
+
+    // shared@2.0.0 is deduped to a single row...
+    assert.equal(licenses["shared@2.0.0"].trees.length, 2);
+    // ...but counted once per scope.
+    assert.equal(prodCount.MIT, 2);
+    assert.equal(devCount.MIT, 1);
+    assert.equal(devCount.ISC, 1);
+  });
 });
 
 describe("initialize", () => {
