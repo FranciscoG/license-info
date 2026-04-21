@@ -19,7 +19,7 @@ describe("buildHtmlReport", () => {
 
   it("should inject license data into the report", () => {
     const licenses = [
-      { name: "test-pkg", license: "MIT", version: "1.0.0", type: "dependency", tree: ["test-pkg@1.0.0"] },
+      { name: "test-pkg", license: "MIT", version: "1.0.0", type: "dependency", trees: [["test-pkg@1.0.0"]] },
     ];
     const licenseCount = { MIT: 1 };
     const html = buildHtmlReport(makeLicenseInfo(licenses, licenseCount));
@@ -34,7 +34,7 @@ describe("buildHtmlReport", () => {
         license: "MIT",
         version: "1.0.0",
         type: "dependency",
-        tree: [],
+        trees: [[]],
       },
     ];
     const html = buildHtmlReport(makeLicenseInfo(licenses, { MIT: 1 }));

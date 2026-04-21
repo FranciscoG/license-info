@@ -157,81 +157,23 @@
 
       let licenseData = [
         {
-          name: "@11ty/dependency-tree",
-          license: "MIT",
-          version: "4.0.0",
-          type: "transitive",
-          tree: ["@11ty/eleventy@3.1.2", "@11ty/dependency-tree@4.0.0"],
-        },
-        {
-          name: "@11ty/dependency-tree-esm",
-          license: "MIT",
-          version: "2.0.0",
-          type: "transitive",
-          tree: ["@11ty/eleventy@3.1.2", "@11ty/dependency-tree-esm@2.0.0"],
-        },
-        {
           name: "@11ty/eleventy",
           license: "MIT",
           version: "3.1.2",
           type: "dependency",
-          tree: ["@11ty/eleventy@3.1.2"],
+          trees: [["@11ty/eleventy@3.1.2"]],
         },
         {
-          name: "@11ty/eleventy-dev-server",
+          name: "depd",
           license: "MIT",
-          version: "2.0.8",
-          type: "devDependency",
-          tree: ["@11ty/eleventy@3.1.2", "@11ty/eleventy-dev-server@2.0.8"],
-        },
-        {
-          name: "@11ty/eleventy-fetch",
-          license: "MIT",
-          version: "5.1.0",
-          type: "devDependency",
-          tree: ["@11ty/eleventy-img@6.0.4", "@11ty/eleventy-fetch@5.1.0"],
-        },
-        {
-          name: "@11ty/eleventy-img",
-          license: "MIT",
-          version: "6.0.4",
-          type: "dependency",
-          tree: ["@11ty/eleventy-img@6.0.4"],
-        },
-        {
-          name: "@11ty/eleventy-navigation",
-          license: "MIT",
-          version: "1.0.4",
-          type: "dependency",
-          tree: ["@11ty/eleventy-navigation@1.0.4"],
-        },
-        {
-          name: "@11ty/eleventy-plugin-bundle",
-          license: "MIT",
-          version: "3.0.6",
-          type: "dependency",
-          tree: ["@11ty/eleventy@3.1.2", "@11ty/eleventy-plugin-bundle@3.0.6"],
-        },
-        {
-          name: "@11ty/eleventy-plugin-rss",
-          license: "MIT",
-          version: "2.0.4",
-          type: "dependency",
-          tree: ["@11ty/eleventy-plugin-rss@2.0.4"],
-        },
-        {
-          name: "@11ty/eleventy-plugin-syntaxhighlight",
-          license: "MIT",
-          version: "5.0.2",
-          type: "dependency",
-          tree: ["@11ty/eleventy-plugin-syntaxhighlight@5.0.2"],
-        },
-        {
-          name: "@11ty/eleventy-utils",
-          license: "MIT",
-          version: "2.0.7",
+          version: "2.0.0",
           type: "transitive",
-          tree: ["@11ty/eleventy@3.1.2", "@11ty/eleventy-utils@2.0.7"],
+          trees: [
+            ["express@4.19.2", "body-parser@1.20.2", "depd@2.0.0"],
+            ["express@4.19.2", "depd@2.0.0"],
+            ["express@4.19.2", "http-errors@2.0.0", "depd@2.0.0"],
+            ["express@4.19.2", "send@0.18.0", "depd@2.0.0"],
+          ],
         },
       ];
       /* {{licenseData}} */
@@ -331,14 +273,20 @@
           clone.querySelector("tr").setAttribute("data-license", info.license);
           clone.querySelector("tr").setAttribute("data-type", info.type);
           clone.querySelector("summary").textContent = info.name;
-          clone.querySelector("details span").innerHTML = "";
-          info.tree.forEach((item, i) => {
-            const code = document.createElement("code");
-            code.style.paddingLeft = `${i * 20}px`;
-            code.textContent = item;
-            clone.querySelector("details span").appendChild(code);
+          const treeContainer = clone.querySelector("details span");
+          treeContainer.innerHTML = "";
+          info.trees.forEach((tree, treeIndex) => {
+            if (treeIndex > 0) {
+              treeContainer.appendChild(document.createElement("hr"));
+            }
+            tree.forEach((item, i) => {
+              const code = document.createElement("code");
+              code.style.paddingLeft = `${i * 20}px`;
+              code.textContent = item;
+              treeContainer.appendChild(code);
+            });
           });
-          clone.querySelector(".registry-link").href = `https://www.npmjs.com/package/${info.name}`;
+          clone.querySelector(".registry-link").href = `https://www.npmjs.com/package/${info.name}/v/${info.version}/`;
           clone.querySelector("td.pkg-version").textContent = info.version;
           clone.querySelector("td.pkg-license").innerHTML = linkifyLicense(info.license);
 

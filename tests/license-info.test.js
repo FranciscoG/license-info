@@ -70,9 +70,6 @@ describe("getFlattenedDependencies", () => {
       _dependencies: { "pkg-a": "^1.0.0" },
     };
 
-    // mock checkDirectoryExists by providing deps that would be in node_modules
-    // Note: this test will skip packages not found in node_modules,
-    // so we test the logic that doesn't depend on filesystem checks
     const deps = {
       "pkg-a": {
         license: "MIT",
@@ -88,11 +85,54 @@ describe("getFlattenedDependencies", () => {
     };
 
     const { licenses, licenseCount } = li.getFlattenedDependencies(deps);
-    // Results depend on checkDirectoryExists, which checks node_modules.
-    // In this test environment there are no node_modules for these packages,
-    // so they'll be skipped. This validates the method doesn't crash.
-    assert.ok(typeof licenseCount === "object");
-    assert.ok(typeof licenses === "object");
+    assert.deepEqual(Object.keys(licenses).sort(), ["pkg-a@1.0.0", "pkg-b@2.0.0"]);
+    assert.equal(licenses["pkg-a@1.0.0"].type, "dependency");
+    assert.equal(licenses["pkg-b@2.0.0"].type, "transitive");
+    assert.deepEqual(licenses["pkg-b@2.0.0"].trees, [["pkg-a@1.0.0", "pkg-b@2.0.0"]]);
+    assert.deepEqual(licenseCount, { MIT: 1, ISC: 1 });
+  });
+
+  it("should dedupe packages reached via multiple paths and collect all trees", () => {
+    const li = new LicenseInfo();
+    li.output = {
+      dependencies: {},
+      devDependencies: {},
+      _dependencies: { express: "^4.0.0" },
+    };
+
+    const deps = {
+      express: {
+        license: "MIT",
+        version: "4.19.2",
+        dependencies: {
+          "body-parser": {
+            license: "MIT",
+            version: "1.20.2",
+            dependencies: {
+              depd: { license: "MIT", version: "2.0.0", dependencies: {} },
+            },
+          },
+          depd: { license: "MIT", version: "2.0.0", dependencies: {} },
+          "http-errors": {
+            license: "MIT",
+            version: "2.0.0",
+            dependencies: {
+              depd: { license: "MIT", version: "2.0.0", dependencies: {} },
+            },
+          },
+        },
+      },
+    };
+
+    const { licenses, licenseCount } = li.getFlattenedDependencies(deps);
+    assert.equal(licenses["depd@2.0.0"].trees.length, 3);
+    assert.deepEqual(licenses["depd@2.0.0"].trees, [
+      ["express@4.19.2", "body-parser@1.20.2", "depd@2.0.0"],
+      ["express@4.19.2", "depd@2.0.0"],
+      ["express@4.19.2", "http-errors@2.0.0", "depd@2.0.0"],
+    ]);
+    // count should not double-count depd@2.0.0
+    assert.equal(licenseCount.MIT, 4);
   });
 
   it("should return empty results for empty deps", () => {
@@ -102,18 +142,10 @@ describe("getFlattenedDependencies", () => {
     assert.deepEqual(licenseCount, {});
   });
 
-  it("should count licenses correctly", () => {
+  it("should preserve an existing licenseCount accumulator", () => {
     const li = new LicenseInfo();
-    li.output = {
-      dependencies: {},
-      devDependencies: {},
-      _dependencies: {},
-    };
-
-    // Since checkDirectoryExists will return false for fake packages,
-    // we verify that the licenseCount object passed in is returned as-is
-    const licenseCount = { MIT: 5 };
-    const result = li.getFlattenedDependencies({}, [], licenseCount);
+    li.output = { dependencies: {}, devDependencies: {}, _dependencies: {} };
+    const result = li.getFlattenedDependencies({}, [], {}, { MIT: 5 });
     assert.deepEqual(result.licenseCount, { MIT: 5 });
   });
 });
