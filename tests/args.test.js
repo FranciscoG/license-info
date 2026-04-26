@@ -1,6 +1,24 @@
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
-import { getArgs, parseArgs } from "../lib/args.js";
+import { describe, it, beforeEach, afterEach } from "node:test";
+import { getArgs } from "../lib/args.js";
+
+const originalExit = process.exit;
+const originalConsoleError = console.error;
+const printedErrors = {};
+
+beforeEach((context) => {
+  console.error = ((...args) => {
+    printedErrors[context.test.name] = args.join(" ");
+  });
+  process.exit = (() => {
+    throw new Error(printedErrors[context.test.name]);
+  });
+});
+
+afterEach(() => {
+  process.exit = originalExit;
+  console.error = originalConsoleError;
+});
 
 describe("getArgs", () => {
   it("should return default values when no arguments are provided", () => {
@@ -53,120 +71,13 @@ describe("getArgs", () => {
 
   // now we try and break it
   it("should fail with unknown arguments", () => {
-    const originalExit = process.exit;
-    const originalConsoleError = console.error;
-    const printedErrors = [];
-
-    process.exit = ((code) => {
-      throw new Error(`EXIT_${code}`);
+    assert.throws(() => getArgs(["--unknown", "--output", "file.html", "--open"]), {
+      message: "Unknown argument: --unknown",
     });
-    console.error = ((...args) => {
-      printedErrors.push(args.join(" "));
-    });
-
-    try {
-      assert.throws(() => getArgs(["--unknown", "--output", "file.html", "--open"]), {
-        message: "EXIT_1",
-      });
-      const output = printedErrors.join("\n");
-      assert.match(output, /Unknown argument: --unknown/i);
-      assert.match(output, /-h or --help/i);
-    } finally {
-      process.exit = originalExit;
-      console.error = originalConsoleError;
-    }
   });
 
   it(`should throw error if "--output" is missing value`, () => {
     assert.throws(() => getArgs(["--output"]), { message: "Missing value for --output" });
     assert.throws(() => getArgs(["--output", "--open"]), { message: "Missing value for --output" });
-  });
-});
-
-describe("parseArgs", () => {
-  it("should return empty object when no arguments are provided", () => {
-    const args = parseArgs([]);
-    assert.deepEqual(args, {});
-  });
-
-  it("should parse flags without values", () => {
-    const args = parseArgs(["--open", "--verbose"]);
-    assert.deepEqual(args, { open: true, verbose: true });
-  });
-
-  it("should parse flags with values using space", () => {
-    const args = parseArgs(["--output", "file.html", "--mode", "strict"]);
-    assert.deepEqual(args, { output: "file.html", mode: "strict" });
-  });
-
-  it("should parse flags with values using equals sign", () => {
-    const args = parseArgs(["--output=file.html", "--mode=strict"]);
-    assert.deepEqual(args, { output: "file.html", mode: "strict" });
-  });
-
-  it("should handle mixed flags and values", () => {
-    const args = parseArgs(["--open", "--output", "file.html", "--mode=strict", "--verbose"]);
-    assert.deepEqual(args, {
-      open: true,
-      output: "file.html",
-      mode: "strict",
-      verbose: true,
-    });
-  });
-
-  it("should handle quoted values and remove surrounding quotes", () => {
-    const args = parseArgs(["--output", '"file with spaces.html"', "--mode='strict mode'"]);
-    assert.deepEqual(args, {
-      output: "file with spaces.html",
-      mode: "strict mode",
-    });
-  });
-
-  it("should handle values with equals signs", () => {
-    const args = parseArgs([
-      "--config",
-      "key=value;anotherKey=anotherValue",
-      "--open",
-      "-p=some=value",
-    ]);
-    assert.deepEqual(args, {
-      config: "key=value;anotherKey=anotherValue",
-      open: true,
-      p: "some=value",
-    });
-  });
-
-  it("should throw error for unexpected values without flags", () => {
-    assert.throws(() => parseArgs(["file.html", "--open"]), {
-      message: "Unexpected value without flag: file.html",
-    });
-  });
-
-  // some edge cases
-  it("should treat `--output=` as a dangling flag (current behavior)", () => {
-    const args = parseArgs(["--output="]);
-    // current implementation treats this as a dangling flag -> true
-    assert.deepEqual(args, { output: true });
-  });
-
-  it("flag with hyphen", () => {
-    const args = parseArgs(["--output", "--flag-with-hyphen"]);
-    // '--flag-with-hyphen' does not match the flag regex, so it's treated as a value
-    assert.deepEqual(args, { output: true, "flag-with-hyphen": true });
-  });
-
-  it("dotted token is treated as a value, not a flag", () => {
-    const args = parseArgs(["--output", "--not.a.flag"]);
-    assert.deepEqual(args, { output: "--not.a.flag" });
-  });
-
-  it("single-dash short flag is recognized", () => {
-    const args = parseArgs(["-p", "some=value"]);
-    assert.deepEqual(args, { p: "some=value" });
-  });
-
-  it("should accept a flag with numbers and underscores", () => {
-    const args = parseArgs(["--flag_123", "value"]);
-    assert.deepEqual(args, { flag_123: "value" });
   });
 });

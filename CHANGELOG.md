@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.1.0] - 2025 Nov XX
+## [0.1.0] - 2026 Apr XX
 
 Initial launch version of this package.
 
