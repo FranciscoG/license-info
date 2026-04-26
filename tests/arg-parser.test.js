@@ -1,24 +1,6 @@
 import assert from "node:assert/strict";
-import { describe, it, beforeEach, afterEach } from "node:test";
+import { describe, it } from "node:test";
 import { parseArgs } from "../lib/utils/arg-parser.js";
-
-const originalExit = process.exit;
-const originalConsoleError = console.error;
-const printedErrors = {};
-
-beforeEach((context) => {
-  console.error = ((...args) => {
-    printedErrors[context.test.name] = args.join(" ");
-  });
-  process.exit = (() => {
-    throw new Error(printedErrors[context.test.name]);
-  });
-});
-
-afterEach(() => {
-  process.exit = originalExit;
-  console.error = originalConsoleError;
-});
 
 /** @type {import('../lib/utils/arg-parser.js').ArgSchema[]} */
 const testSchemas = [
