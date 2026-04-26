@@ -161,4 +161,12 @@ describe("parseArgs", () => {
       { message: "Missing value for --output" }
     );
   });
+
+  it("should throw when the next token after a value flag with an inline = is a known flag", () => {
+    assert.throws(
+      () => parseArgs(["--output=", "--open"], testSchemas),
+      { message: "Missing value for --output=" }
+    );
+  });
 });
+``
