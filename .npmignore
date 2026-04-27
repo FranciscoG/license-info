@@ -1,4 +1,5 @@
 tests/
+demo/
 *.md
 !README.md
 .github/
