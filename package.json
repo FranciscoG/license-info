@@ -4,7 +4,7 @@
   "description": "Generate license information report for your project dependencies.",
   "main": "./lib/index.js",
   "bin": {
-    "license-info": "./lib/index.js"
+    "license-info": "lib/index.js"
   },
   "engines": {
     "node": ">=14.18.0",
@@ -17,7 +17,13 @@
     "type": "git",
     "url": "git+https://github.com/FranciscoG/license-info.git"
   },
-  "keywords": ["license", "licenses", "license-report", "dependency-license", "report"],
+  "keywords": [
+    "license",
+    "licenses",
+    "license-report",
+    "dependency-license",
+    "report"
+  ],
   "author": "Francisco <info@franciscog.com> (https://github.com/FranciscoG)",
   "license": "MIT",
   "type": "module",
