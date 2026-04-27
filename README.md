@@ -21,7 +21,7 @@ npx license-info --open --output=./report.html
 | Flag | Description | Default |
 | :--- | :--- | :--- |
 | `--open`| Automatically opens HTML report in your default browser | Does not open if omitted |
-| `--output` | Set the name and location of the generated report | `./license-report.html` |
+| `--output <path-and-file-name>` | Set the name and location of the generated report | `./license-report.html` |
 
 ## Development
 
@@ -34,12 +34,12 @@ Note that the one important thing about developing for this repo is that you mus
 - Fork this repo
 - Create separate branch(es) to develop in
 - Create a Pull Request targeting this repo's `dev` branch
-- I will verify and test the changes before I merge it into our main branch
+- I will verify and test the changes before I merge it 
 
 ## Alternatives
 
 There are similar existing projects. I think mine offers something unique in the way I setup the HTML report, but if you need something with more bells and whistles, here are a few I found.
 
+- <https://www.npmjs.com/package/license-checker>
 - <https://www.npmjs.com/package/license-report>
 - <https://www.npmjs.com/package/license-report-recursive>
-- <https://www.npmjs.com/package/license-checker>
