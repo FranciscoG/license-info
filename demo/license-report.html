@@ -137,7 +137,7 @@
 
     <div class="license-table" role="table" aria-label="Dependency licenses">
       <div class="header-row" role="row">
-        <div class="cell" role="columnheader">Package <button type="button" id="toggle-details">toggle</button></div>
+        <div class="cell" role="columnheader">Package <button type="button" id="toggle-details" aria-expanded="false">Expand all details</button></div>
         <div class="cell" role="columnheader">Version</div>
         <div class="cell" role="columnheader">License</div>
         <div class="cell" role="columnheader">Link</div>
@@ -500,6 +500,15 @@
       renderFilters();
       renderRows();
 
+      function syncToggleButton() {
+        const anyOpen = Array.from(document.querySelectorAll("license-row details")).some(
+          (d) => d.open
+        );
+        const btn = $('#toggle-details');
+        btn.setAttribute('aria-expanded', String(anyOpen));
+        btn.textContent = anyOpen ? 'Collapse all details' : 'Expand all details';
+      }
+
       $("#license-filters").addEventListener("filter-change", onFilterChange);
       $("#filterDependency").addEventListener("change", onFilterChange);
       $("#filterDevDependency").addEventListener("change", onFilterChange);
@@ -514,10 +523,13 @@
         const anyOpen = Array.from(document.querySelectorAll("license-row details")).some(
           (d) => d.open
         );
+        const newOpen = !anyOpen;
         document.querySelectorAll("license-row").forEach((row) => {
-          row.detailsOpen = !anyOpen;
+          row.detailsOpen = newOpen;
         });
+        syncToggleButton();
       });
+      $(".license-table").addEventListener("toggle", syncToggleButton, { capture: true });
     </script>
   </body>
 </html>
