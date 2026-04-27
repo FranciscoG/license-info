@@ -8,37 +8,67 @@
         font-family: Arial, sans-serif;
         margin: 20px;
       }
-      table {
-        border-collapse: collapse;
-      }
-      th,
-      td {
-        border: 1px solid #ddd;
-        padding: 8px;
-      }
-      tr:nth-child(even) {
-        background: #f4fbfd;
-      }
       fieldset {
         margin-bottom: 1rem;
       }
       legend {
         font-weight: bold;
       }
-      .license-filters {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-        border-top: 1px solid #ccc;
-        padding-top: 7px;
-      }
       label {
         display: block;
         margin-bottom: 5px;
       }
-      .type-cell {
-        white-space: nowrap;
-        gap: 5px;
+
+      .license-filters {
+        column-width: 400px; /* or use column-count: 3; */
+        column-gap: 1rem;
+        border-top: 1px solid #ccc;
+        padding-top: 7px;
       }
+      .license-filters > * {
+        break-inside: avoid;
+        display: block;
+      }
+      .license-count {
+        font-size: 0.8rem;
+        background-color: #666;
+        margin-left: 4px;
+        display: inline-block;
+        padding: 0 6px;
+        border-radius: 6px;
+        color: white;
+      }
+
+      .license-table {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr 2fr 1fr;
+        border: 1px solid #ddd;
+        border-bottom: none;
+      }
+      .license-table > * {
+        display: contents;
+      }
+      .license-table > [hidden] {
+        display: none;
+      }
+      .license-table .cell {
+        padding: 8px;
+        border-bottom: 1px solid #ddd;
+        border-right: 1px solid #ddd;
+      }
+      .license-table .cell:nth-child(5n) {
+        border-right: none;
+      }
+      .license-table .header-row .cell {
+        background-color: #f2f2f2;
+        font-weight: bold;
+        position: sticky;
+        top: 0;
+      }
+      .license-table > license-row:nth-of-type(even) .cell {
+        background: #f4fbfd;
+      }
+
       .pill {
         display: inline-block;
         padding: 2px 8px;
@@ -56,33 +86,29 @@
       .pill.devDependency {
         background-color: #ff9800;
       }
-      thead {
-        background-color: #f2f2f2;
-        position: sticky;
-        top: 0;
+
+      .type-cell {
+        white-space: nowrap;
+        gap: 5px;
       }
-      code {
-        display: block;
-      }
+
       .unknown-license {
         color: red;
         font-weight: bold;
       }
-      .registry-link {
-        font-size: 0.8rem;
-      }
-      .hidden {
-        display: none;
-      }
-      details span {
-        padding-top: 0.5rem;
+
+      dependency-tree {
         display: block;
+        padding-top: 0.5rem;
         padding-left: 1rem;
+      }
+      dependency-tree code {
+        display: block;
       }
     </style>
   </head>
   <body>
-    <h1>Dependency Licenses</h1>
+    <h1>Dependency licenses for {{projectName}}</h1>
     <form>
       <fieldset>
         <legend>Filter by License</legend>
@@ -90,7 +116,7 @@
           <input id="selectAll" type="checkbox" value="ALL" checked />
           Select All
         </label>
-        <div class="license-filters"></div>
+        <div id="license-filters" class="license-filters"></div>
       </fieldset>
       <fieldset>
         <legend>Filter by Dependency Type</legend>
@@ -108,49 +134,21 @@
         </label>
       </fieldset>
     </form>
-    <table>
-      <thead>
-        <tr>
-          <th>Package</th>
-          <th>Link</th>
-          <th>Version</th>
-          <th>License</th>
-          <th>Type</th>
-        </tr>
-      </thead>
-      <tbody id="license-details-body"></tbody>
-    </table>
-    <template id="filter-template">
-      <label>
-        <input type="checkbox" value="" checked />
-        <span class="license-name-count">{{license}} ({{count}})</span>
-      </label>
-    </template>
-    <template id="row-template">
-      <tr data-license="{{license}}" data-type="{{type}}">
-        <td class="pkg-name">
-          <details>
-            <summary>{{name}}</summary>
-            <span> {{tree}} </span>
-          </details>
-        </td>
-        <td>
-          <a class="registry-link" target="_blank" href="https://www.npmjs.com/package/{{name}}"
-            >npm</a
-          >
-        </td>
-        <td class="pkg-version">{{version}}</td>
-        <td class="pkg-license">{{licenseLink}}</td>
-        <td class="type-cell">
-          <span class="pill {{type}}">{{type}}</span>
-        </td>
-      </tr>
-    </template>
+
+    <div class="license-table" role="table" aria-label="Dependency licenses">
+      <div class="header-row" role="row">
+        <div class="cell" role="columnheader">Package <button type="button" id="toggle-details">toggle</button></div>
+        <div class="cell" role="columnheader">Version</div>
+        <div class="cell" role="columnheader">License</div>
+        <div class="cell" role="columnheader">Link</div>
+        <div class="cell" role="columnheader">Type</div>
+      </div>
+    </div>
+
     <script>
       const UNKNOWN_LICENSE = "UNKNOWN";
-      /**
-       * @type {Record<string, number>}
-       */
+
+      /** @type {Record<string, number>} */
       let licenseCount = { MIT: 12, "Apache-2.0": 8, "GPL-3.0": 3, UNKNOWN: 5 };
       /* {{licenseCount}} */
 
@@ -177,202 +175,349 @@
       ];
       /* {{licenseData}} */
 
-      const dependencyCount = licenseData.filter((item) => item.type === "dependency").length;
-      const devDependencyCount = licenseData.filter((item) => item.type === "devDependency").length;
-      const transitiveCount = licenseData.filter((item) => item.type === "transitive").length;
+      /**
+       * `<license-filter name="MIT" count="12">` — one license filter checkbox.
+       *
+       * Reads `name` and `count` once when first connected. Dispatches a bubbling
+       * `filter-change` CustomEvent when toggled. Exposes `.checked` for the
+       * coordinator to read during filtering.
+       */
+      class LicenseFilter extends HTMLElement {
+        static template = (() => {
+          const t = document.createElement("template");
+          t.innerHTML = `
+            <label>
+              <input type="checkbox" checked />
+              <span class="license-name"></span>
+              <span class="license-count"></span>
+            </label>
+          `;
+          return t;
+        })();
 
-      function renderFilters() {
-        const template = document.getElementById("filter-template");
-        const container = document.querySelector(".license-filters");
-        container.innerHTML = "";
-        for (const [license, count] of Object.entries(licenseCount)) {
-          const clone = template.content.cloneNode(true);
-          clone.querySelector("input").value = license;
-          clone.querySelector("input").checked = true;
-          clone.querySelector(".license-name-count").innerHTML = `${license} (${count})`;
-          clone.querySelector("label").className = license === "UNKNOWN" ? "unknown-license" : "";
-          container.appendChild(clone);
+        connectedCallback() {
+          if (this._built) return;
+          this.replaceChildren(LicenseFilter.template.content.cloneNode(true));
+          const name = this.getAttribute("name") ?? "";
+          const count = this.getAttribute("count") ?? "";
+          this.querySelector("label").className =
+            name === UNKNOWN_LICENSE ? "unknown-license" : "";
+          this._input = this.querySelector("input");
+          this._input.value = name;
+          this._input.addEventListener("change", () => {
+            this.dispatchEvent(new CustomEvent("filter-change", { bubbles: true }));
+          });
+          this.querySelector(".license-name").textContent = name;
+          this.querySelector(".license-count").textContent = count;
+          this._built = true;
         }
-        document.getElementById("dependencyCount").textContent = `(${dependencyCount})`;
-        document.getElementById("devDependencyCount").textContent = `(${devDependencyCount})`;
-        document.getElementById("transitiveCount").textContent = `(${transitiveCount})`;
+
+        /** @returns {boolean} */
+        get checked() {
+          return this._input.checked;
+        }
+
+        /** @param {boolean} v */
+        set checked(v) {
+          this._input.checked = v;
+        }
+
+        /** @returns {string} */
+        get name() {
+          return this.getAttribute("name") ?? "";
+        }
       }
-      renderFilters();
+      customElements.define("license-filter", LicenseFilter);
 
       /**
-       * Create an SPDX license link
-       * @param {string} id - License identifier
-       * @returns {string} HTML link to SPDX license page
-       */
-      const spdxLink = (id) =>
-        `<a target="_blank" href="https://spdx.org/licenses/${id}.html">${id}</a>`;
-      const spdxOperators = ["AND", "OR", "WITH"];
-      const spdxRegex = new RegExp(`\\s+(${spdxOperators.join("|")})\\s+`, "g");
-
-      /**
-       * Linkify a license name if possible to https://spdx.org/licenses/
+       * `<dependency-tree>` — renders an indented dependency path tree.
        *
-       * There are packages that handle parsing SPDX expressions
-       * (like https://www.npmjs.com/package/spdx-expression-parse)
-       * but because I want to keep this script dependency-free,
-       * I'm implementing a simple parser that handles the most common cases.
-       *
-       * @param {string} license
-       * @returns {string} HTML-formatted license with links
+       * Receives data via the `.trees` property: an array of arrays of strings,
+       * where each inner array is one path from a top-level dep down to the package.
        */
-      function linkifyLicense(license = "") {
-        if (
-          !license ||
-          license === UNKNOWN_LICENSE ||
-          license.includes("SEE LICENSE") ||
-          license === "UNLICENSED"
-        ) {
-          return license;
+      class DependencyTree extends HTMLElement {
+        connectedCallback() {
+          if (this._trees) this.render();
         }
 
-        // Handle complex license expressions
-        // (BSD-2-Clause OR MIT OR Apache-2.0)
-        // (MIT AND CC0-1.0)
-        // (GPL-2.0+ WITH Bison-exception-2.2)
-        // for now it will not handle nested parentheses: (MIT AND (LGPL-2.1+ AND BSD-3-Clause))
-        if (license.startsWith("(") && license.endsWith(")")) {
-          // remove the outer parentheses and process the inner expression
-          const inner = license.slice(1, -1);
-
-          // if the inner expressions still contains parentheses, we won't try to parse it further
-          if (inner.includes("(")) {
-            // just link them to the main list of licenses and they can search there
-            return `<a target="_blank" href="https://spdx.org/licenses/">${license}</a>`;
-          }
-
-          // split by AND/OR/WITH and linkify each part and bring it back to
-          // together with the original operator
-          return inner
-            .split(spdxRegex)
-            .filter((x) => !!x.trim())
-            .map((part) => {
-              part = part.trim();
-              if (spdxOperators.includes(part)) {
-                return ` ${part} `;
-              }
-              return spdxLink(part);
-            })
-            .join("");
+        /** @param {string[][]} value */
+        set trees(value) {
+          this._trees = value;
+          if (this.isConnected) this.render();
         }
 
-        return spdxLink(license);
-      }
+        get trees() {
+          return this._trees;
+        }
 
-      function renderRows() {
-        const template = document.getElementById("row-template");
-        const tbody = document.getElementById("license-details-body");
-        tbody.innerHTML = "";
-        for (const info of licenseData) {
-          const clone = template.content.cloneNode(true);
-          clone.querySelector("tr").setAttribute("data-license", info.license);
-          clone.querySelector("tr").setAttribute("data-type", info.type);
-          clone.querySelector("summary").textContent = info.name;
-          const treeContainer = clone.querySelector("details span");
-          treeContainer.innerHTML = "";
-          info.trees.forEach((tree, treeIndex) => {
-            if (treeIndex > 0) {
-              treeContainer.appendChild(document.createElement("hr"));
-            }
+        render() {
+          const frag = document.createDocumentFragment();
+          this._trees.forEach((tree, treeIndex) => {
+            if (treeIndex > 0) frag.appendChild(document.createElement("hr"));
             tree.forEach((item, i) => {
               const code = document.createElement("code");
               code.style.paddingLeft = `${i * 20}px`;
               code.textContent = item;
-              treeContainer.appendChild(code);
+              frag.appendChild(code);
             });
           });
-          clone.querySelector(".registry-link").href = `https://www.npmjs.com/package/${info.name}/v/${info.version}/`;
-          clone.querySelector("td.pkg-version").textContent = info.version;
-          clone.querySelector("td.pkg-license").innerHTML = linkifyLicense(info.license);
-
-          clone.querySelector(".pill").classList.add(info.type);
-          clone.querySelector(".pill").textContent = info.type;
-          tbody.appendChild(clone);
+          this.replaceChildren(frag);
         }
       }
-      renderRows();
+      customElements.define("dependency-tree", DependencyTree);
+
+      /**
+       * `<license-link expr="(MIT OR Apache-2.0)">` — renders an SPDX license
+       * expression as one or more links to https://spdx.org/licenses/.
+       *
+       * Handles common expressions: bare ids (MIT), grouped (BSD-2-Clause OR MIT),
+       * conjunctions (MIT AND CC0-1.0), exceptions (GPL-2.0+ WITH Bison-exception-2.2).
+       * Nested parentheses fall back to a single link to the SPDX listing — keeps
+       * this dependency-free (no spdx-expression-parse).
+       */
+      class LicenseLink extends HTMLElement {
+        static observedAttributes = ["expr"];
+        static OPERATORS = ["AND", "OR", "WITH"];
+        static SPLIT_RE = new RegExp(
+          `\\s+(${LicenseLink.OPERATORS.join("|")})\\s+`,
+          "g"
+        );
+
+        connectedCallback() {
+          this.render();
+        }
+
+        attributeChangedCallback() {
+          if (this.isConnected) this.render();
+        }
+
+        render() {
+          this.replaceChildren(
+            ...LicenseLink.parse(this.getAttribute("expr") ?? "")
+          );
+        }
+
+        /**
+         * @param {string} expr
+         * @returns {Node[]}
+         */
+        static parse(expr) {
+          if (
+            !expr ||
+            expr === UNKNOWN_LICENSE ||
+            expr.includes("SEE LICENSE") ||
+            expr === "UNLICENSED"
+          ) {
+            return [document.createTextNode(expr)];
+          }
+          if (expr.startsWith("(") && expr.endsWith(")")) {
+            const inner = expr.slice(1, -1);
+            if (inner.includes("(")) {
+              return [LicenseLink.makeLink(expr, "https://spdx.org/licenses/")];
+            }
+            return inner
+              .split(LicenseLink.SPLIT_RE)
+              .filter((x) => !!x.trim())
+              .map((part) => {
+                part = part.trim();
+                if (LicenseLink.OPERATORS.includes(part)) {
+                  return document.createTextNode(` ${part} `);
+                }
+                return LicenseLink.makeLink(
+                  part,
+                  `https://spdx.org/licenses/${part}.html`
+                );
+              });
+          }
+          return [
+            LicenseLink.makeLink(expr, `https://spdx.org/licenses/${expr}.html`),
+          ];
+        }
+
+        /**
+         * @param {string} text
+         * @param {string} href
+         * @returns {HTMLAnchorElement}
+         */
+        static makeLink(text, href) {
+          const a = document.createElement("a");
+          a.target = "_blank";
+          a.href = href;
+          a.textContent = text;
+          return a;
+        }
+      }
+      customElements.define("license-link", LicenseLink);
+
+      /**
+       * `<license-row>` — one row in the licenses table.
+       *
+       * Set `.data` to a license info object to render. Reflects `data-license`
+       * and `data-type` for filtering. Hide via the native `hidden` attribute
+       * (the parent grid CSS recognises `[hidden]`).
+       *
+       * @typedef {{
+       *   name: string,
+       *   license: string,
+       *   version: string,
+       *   type: 'dependency'|'devDependency'|'transitive',
+       *   trees: string[][]
+       * }} LicenseInfo
+       */
+      class LicenseRow extends HTMLElement {
+        static template = (() => {
+          const t = document.createElement("template");
+          t.innerHTML = `
+            <div class="cell pkg-name" role="cell">
+              <details>
+                <summary></summary>
+                <dependency-tree></dependency-tree>
+              </details>
+            </div>
+            <div class="cell pkg-version" role="cell"></div>
+            <div class="cell" role="cell">
+              <license-link></license-link>
+            </div>
+            <div class="cell" role="cell">
+              <a class="registry-link" target="_blank">npm</a>
+            </div>
+            <div class="cell type-cell" role="cell">
+              <span class="pill"></span>
+            </div>
+          `;
+          return t;
+        })();
+
+        connectedCallback() {
+          if (!this._built) {
+            this.setAttribute("role", "row");
+            this.replaceChildren(LicenseRow.template.content.cloneNode(true));
+            this._built = true;
+          }
+          if (this._data) this.update();
+        }
+
+        /** @param {LicenseInfo} info */
+        set data(info) {
+          this._data = info;
+          if (this._built) this.update();
+        }
+
+        get data() {
+          return this._data;
+        }
+
+        set detailsOpen(open) {
+          this.querySelector("details").open = open;
+        }
+
+        update() {
+          const info = this._data;
+          this.dataset.license = info.license;
+          this.dataset.type = info.type;
+          this.querySelector("summary").textContent = info.name;
+          this.querySelector("dependency-tree").trees = info.trees;
+          this.querySelector(
+            ".registry-link"
+          ).href = `https://www.npmjs.com/package/${info.name}/v/${info.version}/`;
+          this.querySelector(".pkg-version").textContent = info.version;
+          this.querySelector("license-link").setAttribute("expr", info.license);
+          const pill = this.querySelector(".pill");
+          pill.className = `pill ${info.type}`;
+          pill.textContent = info.type;
+        }
+      }
+      customElements.define("license-row", LicenseRow);
+
+      // ─── Coordinator (filters → row visibility) ─────────────────────────
 
       const $ = document.querySelector.bind(document);
-      const $$ = document.querySelectorAll.bind(document);
 
-      /**
-       * @type {HTMLTableRowElement[]}
-       */
-      const rows = Array.from($$("#license-details-body tr"));
-
-      /**
-       * @type {HTMLInputElement[]}
-       */
-      const checkboxes = Array.from($$('.license-filters input[type="checkbox"]'));
-
-      /** @type {HTMLInputElement} */
-      const showDirectProd = $("#filterDependency");
-
-      /** @type {HTMLInputElement} */
-      const showDirectDev = $("#filterDevDependency");
-
-      /** @type {HTMLInputElement} */
-      const showTransitive = $("#filterTransitive");
-
-      function filterTable(e) {
-        const checkedLicenseFilters = checkboxes.filter((cb) => cb.checked);
-        const checkedLicenses = new Set(checkedLicenseFilters.map((cb) => cb.value));
-
-        requestAnimationFrame(() => {
-          rows.forEach((row) => {
-            const license = row.getAttribute("data-license");
-            const type = row.getAttribute("data-type");
-            const shouldShowDirectProd = showDirectProd.checked && type === "dependency";
-            const shouldShowDirectDev = showDirectDev.checked && type === "devDependency";
-            const shouldShowTransitive = showTransitive.checked && type === "transitive";
-            const shouldShow =
-              license &&
-              checkedLicenses.has(license) &&
-              (shouldShowDirectProd || shouldShowTransitive || shouldShowDirectDev);
-            row.classList.toggle("hidden", !shouldShow);
-          });
-        });
-      }
+      const dependencyCount = licenseData.filter((i) => i.type === "dependency").length;
+      const devDependencyCount = licenseData.filter((i) => i.type === "devDependency").length;
+      const transitiveCount = licenseData.filter((i) => i.type === "transitive").length;
 
       function debounce(func, wait) {
         let timeout;
-        return function executedFunction(...args) {
-          const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-          };
+        return function (...args) {
           clearTimeout(timeout);
-          timeout = setTimeout(later, wait);
+          timeout = setTimeout(() => func(...args), wait);
         };
       }
 
-      const debouncedFilterTable = debounce(filterTable, 100); // 100ms delay
+      function filterRows() {
+        const checkedLicenses = new Set(
+          Array.from(document.querySelectorAll("license-filter"))
+            .filter((f) => f.checked)
+            .map((f) => f.name)
+        );
+        const showProd = $("#filterDependency").checked;
+        const showDev = $("#filterDevDependency").checked;
+        const showTransitive = $("#filterTransitive").checked;
 
-      function attachFilterListeners() {
-        checkboxes.forEach((checkbox) => {
-          checkbox.addEventListener("change", debouncedFilterTable);
-        });
-
-        $("#selectAll")?.addEventListener("change", (e) => {
-          const checked = /** @type {HTMLInputElement} */ (e.target)?.checked;
-          checkboxes.forEach((checkbox) => {
-            checkbox.checked = checked;
+        requestAnimationFrame(() => {
+          document.querySelectorAll("license-row").forEach((row) => {
+            const { license, type } = row.dataset;
+            const typeAllowed =
+              (showProd && type === "dependency") ||
+              (showDev && type === "devDependency") ||
+              (showTransitive && type === "transitive");
+            row.hidden = !(license && checkedLicenses.has(license) && typeAllowed);
           });
-          debouncedFilterTable();
         });
-
-        $("#filterDependency")?.addEventListener("change", debouncedFilterTable);
-
-        $("#filterDevDependency")?.addEventListener("change", debouncedFilterTable);
-
-        $("#filterTransitive")?.addEventListener("change", debouncedFilterTable);
       }
 
-      attachFilterListeners();
+      const onFilterChange = debounce(filterRows, 100);
+
+      function renderFilters() {
+        const container = $("#license-filters");
+        // sort licenseCount by value desc, then key asc
+        const sortedLicenses = Object.entries(licenseCount).sort((a, b) => {
+          const countDiff = b[1] - a[1];
+          if (countDiff !== 0) return countDiff;
+          return a[0].localeCompare(b[0]);
+        });
+        for (const [name, count] of sortedLicenses) {
+          const filter = document.createElement("license-filter");
+          filter.setAttribute("name", name);
+          filter.setAttribute("count", count);
+          container.appendChild(filter);
+        }
+        $("#dependencyCount").textContent = `(${dependencyCount})`;
+        $("#devDependencyCount").textContent = `(${devDependencyCount})`;
+        $("#transitiveCount").textContent = `(${transitiveCount})`;
+      }
+
+      function renderRows() {
+        const table = $(".license-table");
+        for (const info of licenseData) {
+          const row = document.createElement("license-row");
+          table.appendChild(row);
+          row.data = info;
+        }
+      }
+
+      renderFilters();
+      renderRows();
+
+      $("#license-filters").addEventListener("filter-change", onFilterChange);
+      $("#filterDependency").addEventListener("change", onFilterChange);
+      $("#filterDevDependency").addEventListener("change", onFilterChange);
+      $("#filterTransitive").addEventListener("change", onFilterChange);
+      $("#selectAll").addEventListener("change", (e) => {
+        document.querySelectorAll("license-filter").forEach((f) => {
+          f.checked = e.target.checked;
+        });
+        onFilterChange();
+      });
+      $('#toggle-details').addEventListener("click", () => {
+        const anyOpen = Array.from(document.querySelectorAll("license-row details")).some(
+          (d) => d.open
+        );
+        document.querySelectorAll("license-row").forEach((row) => {
+          row.detailsOpen = !anyOpen;
+        });
+      });
     </script>
   </body>
 </html>

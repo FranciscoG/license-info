@@ -8,37 +8,67 @@
         font-family: Arial, sans-serif;
         margin: 20px;
       }
-      table {
-        border-collapse: collapse;
-      }
-      th,
-      td {
-        border: 1px solid #ddd;
-        padding: 8px;
-      }
-      tr:nth-child(even) {
-        background: #f4fbfd;
-      }
       fieldset {
         margin-bottom: 1rem;
       }
       legend {
         font-weight: bold;
       }
-      .license-filters {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-        border-top: 1px solid #ccc;
-        padding-top: 7px;
-      }
       label {
         display: block;
         margin-bottom: 5px;
       }
-      .type-cell {
-        white-space: nowrap;
-        gap: 5px;
+
+      .license-filters {
+        column-width: 400px; /* or use column-count: 3; */
+        column-gap: 1rem;
+        border-top: 1px solid #ccc;
+        padding-top: 7px;
       }
+      .license-filters > * {
+        break-inside: avoid;
+        display: block;
+      }
+      .license-count {
+        font-size: 0.8rem;
+        background-color: #666;
+        margin-left: 4px;
+        display: inline-block;
+        padding: 0 6px;
+        border-radius: 6px;
+        color: white;
+      }
+
+      .license-table {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr 2fr 1fr;
+        border: 1px solid #ddd;
+        border-bottom: none;
+      }
+      .license-table > * {
+        display: contents;
+      }
+      .license-table > [hidden] {
+        display: none;
+      }
+      .license-table .cell {
+        padding: 8px;
+        border-bottom: 1px solid #ddd;
+        border-right: 1px solid #ddd;
+      }
+      .license-table .cell:nth-child(5n) {
+        border-right: none;
+      }
+      .license-table .header-row .cell {
+        background-color: #f2f2f2;
+        font-weight: bold;
+        position: sticky;
+        top: 0;
+      }
+      .license-table > license-row:nth-of-type(even) .cell {
+        background: #f4fbfd;
+      }
+
       .pill {
         display: inline-block;
         padding: 2px 8px;
@@ -56,33 +86,29 @@
       .pill.devDependency {
         background-color: #ff9800;
       }
-      thead {
-        background-color: #f2f2f2;
-        position: sticky;
-        top: 0;
+
+      .type-cell {
+        white-space: nowrap;
+        gap: 5px;
       }
-      code {
-        display: block;
-      }
+
       .unknown-license {
         color: red;
         font-weight: bold;
       }
-      .registry-link {
-        font-size: 0.8rem;
-      }
-      .hidden {
-        display: none;
-      }
-      details span {
-        padding-top: 0.5rem;
+
+      dependency-tree {
         display: block;
+        padding-top: 0.5rem;
         padding-left: 1rem;
+      }
+      dependency-tree code {
+        display: block;
       }
     </style>
   </head>
   <body>
-    <h1>Dependency Licenses</h1>
+    <h1>Dependency licenses for "license-info-demo"</h1>
     <form>
       <fieldset>
         <legend>Filter by License</legend>
@@ -90,7 +116,7 @@
           <input id="selectAll" type="checkbox" value="ALL" checked />
           Select All
         </label>
-        <div class="license-filters"></div>
+        <div id="license-filters" class="license-filters"></div>
       </fieldset>
       <fieldset>
         <legend>Filter by Dependency Type</legend>
@@ -108,49 +134,21 @@
         </label>
       </fieldset>
     </form>
-    <table>
-      <thead>
-        <tr>
-          <th>Package</th>
-          <th>Link</th>
-          <th>Version</th>
-          <th>License</th>
-          <th>Type</th>
-        </tr>
-      </thead>
-      <tbody id="license-details-body"></tbody>
-    </table>
-    <template id="filter-template">
-      <label>
-        <input type="checkbox" value="" checked />
-        <span class="license-name-count">{{license}} ({{count}})</span>
-      </label>
-    </template>
-    <template id="row-template">
-      <tr data-license="{{license}}" data-type="{{type}}">
-        <td class="pkg-name">
-          <details>
-            <summary>{{name}}</summary>
-            <span> {{tree}} </span>
-          </details>
-        </td>
-        <td>
-          <a class="registry-link" target="_blank" href="https://www.npmjs.com/package/{{name}}"
-            >npm</a
-          >
-        </td>
-        <td class="pkg-version">{{version}}</td>
-        <td class="pkg-license">{{licenseLink}}</td>
-        <td class="type-cell">
-          <span class="pill {{type}}">{{type}}</span>
-        </td>
-      </tr>
-    </template>
+
+    <div class="license-table" role="table" aria-label="Dependency licenses">
+      <div class="header-row" role="row">
+        <div class="cell" role="columnheader">Package <button type="button" id="toggle-details">toggle</button></div>
+        <div class="cell" role="columnheader">Version</div>
+        <div class="cell" role="columnheader">License</div>
+        <div class="cell" role="columnheader">Link</div>
+        <div class="cell" role="columnheader">Type</div>
+      </div>
+    </div>
+
     <script>
       const UNKNOWN_LICENSE = "UNKNOWN";
-      /**
-       * @type {Record<string, number>}
-       */
+
+      /** @type {Record<string, number>} */
       let licenseCount = { MIT: 12, "Apache-2.0": 8, "GPL-3.0": 3, UNKNOWN: 5 };
       licenseCount = {"MIT":181,"ISC":63,"Python-2.0":1,"Apache-2.0":9,"BSD-3-Clause":13,"UNKNOWN":1,"(MPL-2.0 OR Apache-2.0)":1,"(AFL-2.1 OR BSD-3-Clause)":1,"Public Domain":1,"(BSD-3-Clause OR GPL-2.0)":1,"(MIT AND Zlib)":1,"Unlicense":2,"CC-BY-3.0":1,"BSD-2-Clause":2,"0BSD":1};
 
@@ -177,202 +175,349 @@
       ];
       licenseData = [{"name":"@bcoe/v8-coverage","license":"MIT","version":"0.2.3","type":"transitive","trees":[["c8@9.1.0","@bcoe/v8-coverage@0.2.3"]]},{"name":"@istanbuljs/schema","license":"MIT","version":"0.1.6","type":"transitive","trees":[["c8@9.1.0","@istanbuljs/schema@0.1.6"],["c8@9.1.0","test-exclude@6.0.0","@istanbuljs/schema@0.1.6"]]},{"name":"@jridgewell/resolve-uri","license":"MIT","version":"3.1.2","type":"transitive","trees":[["c8@9.1.0","v8-to-istanbul@9.3.0","@jridgewell/trace-mapping@0.3.31","@jridgewell/resolve-uri@3.1.2"]]},{"name":"@jridgewell/sourcemap-codec","license":"MIT","version":"1.5.5","type":"transitive","trees":[["c8@9.1.0","v8-to-istanbul@9.3.0","@jridgewell/trace-mapping@0.3.31","@jridgewell/sourcemap-codec@1.5.5"]]},{"name":"@jridgewell/trace-mapping","license":"MIT","version":"0.3.31","type":"transitive","trees":[["c8@9.1.0","v8-to-istanbul@9.3.0","@jridgewell/trace-mapping@0.3.31"]]},{"name":"@types/istanbul-lib-coverage","license":"MIT","version":"2.0.6","type":"transitive","trees":[["c8@9.1.0","v8-to-istanbul@9.3.0","@types/istanbul-lib-coverage@2.0.6"]]},{"name":"abort-controller","license":"MIT","version":"3.0.0","type":"transitive","trees":[["readable-stream@4.5.2","abort-controller@3.0.0"]]},{"name":"accepts","license":"MIT","version":"1.3.8","type":"transitive","trees":[["express@4.19.2","accepts@1.3.8"]]},{"name":"ajv","license":"MIT","version":"6.14.0","type":"transitive","trees":[["request@2.88.2","har-validator@5.1.5","ajv@6.14.0"]]},{"name":"ansi-colors","license":"MIT","version":"4.1.1","type":"transitive","trees":[["mocha@10.4.0","ansi-colors@4.1.1"]]},{"name":"ansi-regex","license":"MIT","version":"5.0.1","type":"transitive","trees":[["c8@9.1.0","yargs@17.7.2","cliui@8.0.1","strip-ansi@6.0.1","ansi-regex@5.0.1"]]},{"name":"ansi-styles","license":"MIT","version":"4.3.0","type":"transitive","trees":[["c8@9.1.0","yargs@17.7.2","cliui@8.0.1","wrap-ansi@7.0.0","ansi-styles@4.3.0"],["mocha@10.4.0","log-symbols@4.1.0","chalk@4.1.2","ansi-styles@4.3.0"]]},{"name":"anymatch","license":"ISC","version":"3.1.3","type":"transitive","trees":[["mocha@10.4.0","chokidar@3.5.3","anymatch@3.1.3"]]},{"name":"argparse","license":"Python-2.0","version":"2.0.1","type":"dependency","trees":[["argparse@2.0.1"],["mocha@10.4.0","js-yaml@4.1.0","argparse@2.0.1"]]},{"name":"array-flatten","license":"MIT","version":"1.1.1","type":"transitive","trees":[["express@4.19.2","array-flatten@1.1.1"]]},{"name":"asn1","license":"MIT","version":"0.2.6","type":"transitive","trees":[["request@2.88.2","http-signature@1.2.0","sshpk@1.18.0","asn1@0.2.6"]]},{"name":"assert-plus","license":"MIT","version":"1.0.0","type":"transitive","trees":[["request@2.88.2","http-signature@1.2.0","assert-plus@1.0.0"],["request@2.88.2","http-signature@1.2.0","jsprim@1.4.2","assert-plus@1.0.0"],["request@2.88.2","http-signature@1.2.0","jsprim@1.4.2","verror@1.10.0","assert-plus@1.0.0"],["request@2.88.2","http-signature@1.2.0","sshpk@1.18.0","assert-plus@1.0.0"],["request@2.88.2","http-signature@1.2.0","sshpk@1.18.0","dashdash@1.14.1","assert-plus@1.0.0"],["request@2.88.2","http-signature@1.2.0","sshpk@1.18.0","getpass@0.1.7","assert-plus@1.0.0"]]},{"name":"assertion-error","license":"MIT","version":"2.0.1","type":"transitive","trees":[["chai@5.1.1","assertion-error@2.0.1"]]},{"name":"asynckit","license":"MIT","version":"0.4.0","type":"transitive","trees":[["request@2.88.2","form-data@2.3.3","asynckit@0.4.0"]]},{"name":"aws-sign2","license":"Apache-2.0","version":"0.7.0","type":"transitive","trees":[["request@2.88.2","aws-sign2@0.7.0"]]},{"name":"aws4","license":"MIT","version":"1.13.2","type":"transitive","trees":[["request@2.88.2","aws4@1.13.2"]]},{"name":"balanced-match","license":"MIT","version":"1.0.2","type":"transitive","trees":[["c8@9.1.0","test-exclude@6.0.0","minimatch@3.1.5","brace-expansion@1.1.14","balanced-match@1.0.2"],["mocha@10.4.0","minimatch@5.0.1","brace-expansion@2.1.0","balanced-match@1.0.2"]]},{"name":"base64-js","license":"MIT","version":"1.5.1","type":"transitive","trees":[["readable-stream@4.5.2","buffer@6.0.3","base64-js@1.5.1"]]},{"name":"bcrypt-pbkdf","license":"BSD-3-Clause","version":"1.0.2","type":"transitive","trees":[["request@2.88.2","http-signature@1.2.0","sshpk@1.18.0","bcrypt-pbkdf@1.0.2"]]},{"name":"binary-extensions","license":"MIT","version":"2.3.0","type":"transitive","trees":[["mocha@10.4.0","chokidar@3.5.3","is-binary-path@2.1.0","binary-extensions@2.3.0"]]},{"name":"body-parser","license":"MIT","version":"1.20.2","type":"transitive","trees":[["express@4.19.2","body-parser@1.20.2"]]},{"name":"brace-expansion","license":"MIT","version":"1.1.14","type":"transitive","trees":[["c8@9.1.0","test-exclude@6.0.0","minimatch@3.1.5","brace-expansion@1.1.14"]]},{"name":"brace-expansion","license":"MIT","version":"2.1.0","type":"transitive","trees":[["mocha@10.4.0","minimatch@5.0.1","brace-expansion@2.1.0"]]},{"name":"braces","license":"MIT","version":"3.0.3","type":"transitive","trees":[["mocha@10.4.0","chokidar@3.5.3","braces@3.0.3"]]},{"name":"browser-stdout","license":"ISC","version":"1.3.1","type":"transitive","trees":[["mocha@10.4.0","browser-stdout@1.3.1"]]},{"name":"buffer","license":"MIT","version":"6.0.3","type":"transitive","trees":[["readable-stream@4.5.2","buffer@6.0.3"]]},{"name":"bytes","license":"MIT","version":"3.1.2","type":"transitive","trees":[["express@4.19.2","body-parser@1.20.2","bytes@3.1.2"],["express@4.19.2","body-parser@1.20.2","raw-body@2.5.2","bytes@3.1.2"]]},{"name":"c8","license":"ISC","version":"9.1.0","type":"devDependency","trees":[["c8@9.1.0"]]},{"name":"call-bind-apply-helpers","license":"MIT","version":"1.0.2","type":"transitive","trees":[["express@4.19.2","qs@6.11.0","side-channel@1.1.0","side-channel-map@1.0.1","call-bound@1.0.4","call-bind-apply-helpers@1.0.2"],["express@4.19.2","qs@6.11.0","side-channel@1.1.0","side-channel-map@1.0.1","get-intrinsic@1.3.0","call-bind-apply-helpers@1.0.2"],["express@4.19.2","qs@6.11.0","side-channel@1.1.0","side-channel-map@1.0.1","get-intrinsic@1.3.0","get-proto@1.0.1","dunder-proto@1.0.1","call-bind-apply-helpers@1.0.2"]]},{"name":"call-bound","license":"MIT","version":"1.0.4","type":"transitive","trees":[["express@4.19.2","qs@6.11.0","side-channel@1.1.0","side-channel-map@1.0.1","call-bound@1.0.4"],["express@4.19.2","qs@6.11.0","side-channel@1.1.0","side-channel-weakmap@1.0.2","call-bound@1.0.4"]]},{"name":"camelcase","license":"MIT","version":"6.3.0","type":"transitive","trees":[["mocha@10.4.0","yargs-unparser@2.0.0","camelcase@6.3.0"]]},{"name":"caseless","license":"Apache-2.0","version":"0.12.0","type":"transitive","trees":[["request@2.88.2","caseless@0.12.0"]]},{"name":"chai","license":"MIT","version":"5.1.1","type":"devDependency","trees":[["chai@5.1.1"]]},{"name":"chalk","license":"MIT","version":"4.1.2","type":"transitive","trees":[["mocha@10.4.0","log-symbols@4.1.0","chalk@4.1.2"]]},{"name":"check-error","license":"MIT","version":"2.1.3","type":"transitive","trees":[["chai@5.1.1","check-error@2.1.3"]]},{"name":"chokidar","license":"MIT","version":"3.5.3","type":"transitive","trees":[["mocha@10.4.0","chokidar@3.5.3"]]},{"name":"cliui","license":"ISC","version":"8.0.1","type":"transitive","trees":[["c8@9.1.0","yargs@17.7.2","cliui@8.0.1"]]},{"name":"cliui","license":"ISC","version":"7.0.4","type":"transitive","trees":[["mocha@10.4.0","yargs@16.2.0","cliui@7.0.4"]]},{"name":"color-convert","license":"MIT","version":"2.0.1","type":"transitive","trees":[["mocha@10.4.0","log-symbols@4.1.0","chalk@4.1.2","ansi-styles@4.3.0","color-convert@2.0.1"]]},{"name":"color-name","license":"MIT","version":"1.1.4","type":"transitive","trees":[["mocha@10.4.0","log-symbols@4.1.0","chalk@4.1.2","ansi-styles@4.3.0","color-convert@2.0.1","color-name@1.1.4"]]},{"name":"colors","license":"MIT","version":"1.4.0","type":"dependency","trees":[["colors@1.4.0"]]},{"name":"combined-stream","license":"MIT","version":"1.0.8","type":"transitive","trees":[["request@2.88.2","combined-stream@1.0.8"],["request@2.88.2","form-data@2.3.3","combined-stream@1.0.8"]]},{"name":"commander","license":"MIT","version":"7.2.0","type":"transitive","trees":[["d3@7.9.0","d3-dsv@3.0.1","commander@7.2.0"]]},{"name":"concat-map","license":"MIT","version":"0.0.1","type":"transitive","trees":[["c8@9.1.0","test-exclude@6.0.0","minimatch@3.1.5","brace-expansion@1.1.14","concat-map@0.0.1"]]},{"name":"content-disposition","license":"MIT","version":"0.5.4","type":"transitive","trees":[["express@4.19.2","content-disposition@0.5.4"]]},{"name":"content-type","license":"MIT","version":"1.0.5","type":"transitive","trees":[["express@4.19.2","body-parser@1.20.2","content-type@1.0.5"],["express@4.19.2","content-type@1.0.5"]]},{"name":"convert-source-map","license":"MIT","version":"2.0.0","type":"transitive","trees":[["c8@9.1.0","v8-to-istanbul@9.3.0","convert-source-map@2.0.0"]]},{"name":"cookie","license":"MIT","version":"0.6.0","type":"transitive","trees":[["express@4.19.2","cookie@0.6.0"]]},{"name":"cookie-signature","license":"MIT","version":"1.0.6","type":"transitive","trees":[["express@4.19.2","cookie-signature@1.0.6"]]},{"name":"core-util-is","license":"MIT","version":"1.0.2","type":"transitive","trees":[["request@2.88.2","http-signature@1.2.0","jsprim@1.4.2","verror@1.10.0","core-util-is@1.0.2"]]},{"name":"cross-spawn","license":"MIT","version":"7.0.6","type":"transitive","trees":[["c8@9.1.0","foreground-child@3.3.1","cross-spawn@7.0.6"]]},{"name":"cycle","license":"UNKNOWN","version":"1.0.3","type":"dependency","trees":[["cycle@1.0.3"]]},{"name":"d3","license":"ISC","version":"7.9.0","type":"dependency","trees":[["d3@7.9.0"]]},{"name":"d3-array","license":"ISC","version":"3.2.4","type":"transitive","trees":[["d3@7.9.0","d3-array@3.2.4"],["d3@7.9.0","d3-contour@4.0.2","d3-array@3.2.4"],["d3@7.9.0","d3-geo@3.1.1","d3-array@3.2.4"],["d3@7.9.0","d3-scale@4.0.2","d3-array@3.2.4"],["d3@7.9.0","d3-time@3.1.0","d3-array@3.2.4"]]},{"name":"d3-axis","license":"ISC","version":"3.0.0","type":"transitive","trees":[["d3@7.9.0","d3-axis@3.0.0"]]},{"name":"d3-brush","license":"ISC","version":"3.0.0","type":"transitive","trees":[["d3@7.9.0","d3-brush@3.0.0"]]},{"name":"d3-chord","license":"ISC","version":"3.0.1","type":"transitive","trees":[["d3@7.9.0","d3-chord@3.0.1"]]},{"name":"d3-color","license":"ISC","version":"3.1.0","type":"transitive","trees":[["d3@7.9.0","d3-color@3.1.0"],["d3@7.9.0","d3-interpolate@3.0.1","d3-color@3.1.0"],["d3@7.9.0","d3-scale-chromatic@3.1.0","d3-color@3.1.0"],["d3@7.9.0","d3-transition@3.0.1","d3-color@3.1.0"]]},{"name":"d3-contour","license":"ISC","version":"4.0.2","type":"transitive","trees":[["d3@7.9.0","d3-contour@4.0.2"]]},{"name":"d3-delaunay","license":"ISC","version":"6.0.4","type":"transitive","trees":[["d3@7.9.0","d3-delaunay@6.0.4"]]},{"name":"d3-dispatch","license":"ISC","version":"3.0.1","type":"transitive","trees":[["d3@7.9.0","d3-brush@3.0.0","d3-dispatch@3.0.1"],["d3@7.9.0","d3-dispatch@3.0.1"],["d3@7.9.0","d3-drag@3.0.0","d3-dispatch@3.0.1"],["d3@7.9.0","d3-force@3.0.0","d3-dispatch@3.0.1"],["d3@7.9.0","d3-transition@3.0.1","d3-dispatch@3.0.1"],["d3@7.9.0","d3-zoom@3.0.0","d3-dispatch@3.0.1"]]},{"name":"d3-drag","license":"ISC","version":"3.0.0","type":"transitive","trees":[["d3@7.9.0","d3-brush@3.0.0","d3-drag@3.0.0"],["d3@7.9.0","d3-drag@3.0.0"],["d3@7.9.0","d3-zoom@3.0.0","d3-drag@3.0.0"]]},{"name":"d3-dsv","license":"ISC","version":"3.0.1","type":"transitive","trees":[["d3@7.9.0","d3-dsv@3.0.1"],["d3@7.9.0","d3-fetch@3.0.1","d3-dsv@3.0.1"]]},{"name":"d3-ease","license":"BSD-3-Clause","version":"3.0.1","type":"transitive","trees":[["d3@7.9.0","d3-ease@3.0.1"],["d3@7.9.0","d3-transition@3.0.1","d3-ease@3.0.1"]]},{"name":"d3-fetch","license":"ISC","version":"3.0.1","type":"transitive","trees":[["d3@7.9.0","d3-fetch@3.0.1"]]},{"name":"d3-force","license":"ISC","version":"3.0.0","type":"transitive","trees":[["d3@7.9.0","d3-force@3.0.0"]]},{"name":"d3-format","license":"ISC","version":"3.1.2","type":"transitive","trees":[["d3@7.9.0","d3-format@3.1.2"],["d3@7.9.0","d3-scale@4.0.2","d3-format@3.1.2"]]},{"name":"d3-geo","license":"ISC","version":"3.1.1","type":"transitive","trees":[["d3@7.9.0","d3-geo@3.1.1"]]},{"name":"d3-hierarchy","license":"ISC","version":"3.1.2","type":"transitive","trees":[["d3@7.9.0","d3-hierarchy@3.1.2"]]},{"name":"d3-interpolate","license":"ISC","version":"3.0.1","type":"transitive","trees":[["d3@7.9.0","d3-brush@3.0.0","d3-interpolate@3.0.1"],["d3@7.9.0","d3-interpolate@3.0.1"],["d3@7.9.0","d3-scale-chromatic@3.1.0","d3-interpolate@3.0.1"],["d3@7.9.0","d3-scale@4.0.2","d3-interpolate@3.0.1"],["d3@7.9.0","d3-transition@3.0.1","d3-interpolate@3.0.1"],["d3@7.9.0","d3-zoom@3.0.0","d3-interpolate@3.0.1"]]},{"name":"d3-path","license":"ISC","version":"3.1.0","type":"transitive","trees":[["d3@7.9.0","d3-chord@3.0.1","d3-path@3.1.0"],["d3@7.9.0","d3-path@3.1.0"],["d3@7.9.0","d3-shape@3.2.0","d3-path@3.1.0"]]},{"name":"d3-polygon","license":"ISC","version":"3.0.1","type":"transitive","trees":[["d3@7.9.0","d3-polygon@3.0.1"]]},{"name":"d3-quadtree","license":"ISC","version":"3.0.1","type":"transitive","trees":[["d3@7.9.0","d3-force@3.0.0","d3-quadtree@3.0.1"],["d3@7.9.0","d3-quadtree@3.0.1"]]},{"name":"d3-random","license":"ISC","version":"3.0.1","type":"transitive","trees":[["d3@7.9.0","d3-random@3.0.1"]]},{"name":"d3-scale","license":"ISC","version":"4.0.2","type":"transitive","trees":[["d3@7.9.0","d3-scale@4.0.2"]]},{"name":"d3-scale-chromatic","license":"ISC","version":"3.1.0","type":"transitive","trees":[["d3@7.9.0","d3-scale-chromatic@3.1.0"]]},{"name":"d3-selection","license":"ISC","version":"3.0.0","type":"transitive","trees":[["d3@7.9.0","d3-brush@3.0.0","d3-selection@3.0.0"],["d3@7.9.0","d3-drag@3.0.0","d3-selection@3.0.0"],["d3@7.9.0","d3-selection@3.0.0"],["d3@7.9.0","d3-transition@3.0.1","d3-selection@3.0.0"],["d3@7.9.0","d3-zoom@3.0.0","d3-selection@3.0.0"]]},{"name":"d3-shape","license":"ISC","version":"3.2.0","type":"transitive","trees":[["d3@7.9.0","d3-shape@3.2.0"]]},{"name":"d3-time","license":"ISC","version":"3.1.0","type":"transitive","trees":[["d3@7.9.0","d3-scale@4.0.2","d3-time@3.1.0"],["d3@7.9.0","d3-time-format@4.1.0","d3-time@3.1.0"],["d3@7.9.0","d3-time@3.1.0"]]},{"name":"d3-time-format","license":"ISC","version":"4.1.0","type":"transitive","trees":[["d3@7.9.0","d3-scale@4.0.2","d3-time-format@4.1.0"],["d3@7.9.0","d3-time-format@4.1.0"]]},{"name":"d3-timer","license":"ISC","version":"3.0.1","type":"transitive","trees":[["d3@7.9.0","d3-force@3.0.0","d3-timer@3.0.1"],["d3@7.9.0","d3-timer@3.0.1"],["d3@7.9.0","d3-transition@3.0.1","d3-timer@3.0.1"]]},{"name":"d3-transition","license":"ISC","version":"3.0.1","type":"transitive","trees":[["d3@7.9.0","d3-brush@3.0.0","d3-transition@3.0.1"],["d3@7.9.0","d3-transition@3.0.1"],["d3@7.9.0","d3-zoom@3.0.0","d3-transition@3.0.1"]]},{"name":"d3-zoom","license":"ISC","version":"3.0.0","type":"transitive","trees":[["d3@7.9.0","d3-zoom@3.0.0"]]},{"name":"dashdash","license":"MIT","version":"1.14.1","type":"transitive","trees":[["request@2.88.2","http-signature@1.2.0","sshpk@1.18.0","dashdash@1.14.1"]]},{"name":"debug","license":"MIT","version":"2.6.9","type":"transitive","trees":[["express@4.19.2","body-parser@1.20.2","debug@2.6.9"],["express@4.19.2","debug@2.6.9"],["express@4.19.2","finalhandler@1.2.0","debug@2.6.9"],["express@4.19.2","send@0.18.0","debug@2.6.9"]]},{"name":"debug","license":"MIT","version":"4.3.4","type":"transitive","trees":[["mocha@10.4.0","debug@4.3.4"]]},{"name":"decamelize","license":"MIT","version":"4.0.0","type":"transitive","trees":[["mocha@10.4.0","yargs-unparser@2.0.0","decamelize@4.0.0"]]},{"name":"deep-eql","license":"MIT","version":"5.0.2","type":"transitive","trees":[["chai@5.1.1","deep-eql@5.0.2"]]},{"name":"delaunator","license":"ISC","version":"5.1.0","type":"transitive","trees":[["d3@7.9.0","d3-delaunay@6.0.4","delaunator@5.1.0"]]},{"name":"delayed-stream","license":"MIT","version":"1.0.0","type":"transitive","trees":[["request@2.88.2","combined-stream@1.0.8","delayed-stream@1.0.0"]]},{"name":"depd","license":"MIT","version":"2.0.0","type":"transitive","trees":[["express@4.19.2","body-parser@1.20.2","depd@2.0.0"],["express@4.19.2","depd@2.0.0"],["express@4.19.2","http-errors@2.0.0","depd@2.0.0"],["express@4.19.2","send@0.18.0","depd@2.0.0"]]},{"name":"destroy","license":"MIT","version":"1.2.0","type":"transitive","trees":[["express@4.19.2","body-parser@1.20.2","destroy@1.2.0"],["express@4.19.2","send@0.18.0","destroy@1.2.0"]]},{"name":"diff","license":"BSD-3-Clause","version":"5.0.0","type":"transitive","trees":[["mocha@10.4.0","diff@5.0.0"]]},{"name":"dompurify","license":"(MPL-2.0 OR Apache-2.0)","version":"3.1.2","type":"dependency","trees":[["dompurify@3.1.2"]]},{"name":"dunder-proto","license":"MIT","version":"1.0.1","type":"transitive","trees":[["express@4.19.2","qs@6.11.0","side-channel@1.1.0","side-channel-map@1.0.1","get-intrinsic@1.3.0","get-proto@1.0.1","dunder-proto@1.0.1"]]},{"name":"ecc-jsbn","license":"MIT","version":"0.1.2","type":"transitive","trees":[["request@2.88.2","http-signature@1.2.0","sshpk@1.18.0","ecc-jsbn@0.1.2"]]},{"name":"ee-first","license":"MIT","version":"1.1.1","type":"transitive","trees":[["express@4.19.2","on-finished@2.4.1","ee-first@1.1.1"]]},{"name":"emoji-regex","license":"MIT","version":"8.0.0","type":"transitive","trees":[["c8@9.1.0","yargs@17.7.2","string-width@4.2.3","emoji-regex@8.0.0"]]},{"name":"encodeurl","license":"MIT","version":"1.0.2","type":"transitive","trees":[["express@4.19.2","encodeurl@1.0.2"],["express@4.19.2","finalhandler@1.2.0","encodeurl@1.0.2"],["express@4.19.2","send@0.18.0","encodeurl@1.0.2"],["express@4.19.2","serve-static@1.15.0","encodeurl@1.0.2"]]},{"name":"es-define-property","license":"MIT","version":"1.0.1","type":"transitive","trees":[["express@4.19.2","qs@6.11.0","side-channel@1.1.0","side-channel-map@1.0.1","get-intrinsic@1.3.0","es-define-property@1.0.1"]]},{"name":"es-errors","license":"MIT","version":"1.3.0","type":"transitive","trees":[["express@4.19.2","qs@6.11.0","side-channel@1.1.0","es-errors@1.3.0"],["express@4.19.2","qs@6.11.0","side-channel@1.1.0","side-channel-list@1.0.1","es-errors@1.3.0"],["express@4.19.2","qs@6.11.0","side-channel@1.1.0","side-channel-map@1.0.1","call-bound@1.0.4","call-bind-apply-helpers@1.0.2","es-errors@1.3.0"],["express@4.19.2","qs@6.11.0","side-channel@1.1.0","side-channel-map@1.0.1","es-errors@1.3.0"],["express@4.19.2","qs@6.11.0","side-channel@1.1.0","side-channel-map@1.0.1","get-intrinsic@1.3.0","es-errors@1.3.0"],["express@4.19.2","qs@6.11.0","side-channel@1.1.0","side-channel-map@1.0.1","get-intrinsic@1.3.0","es-object-atoms@1.1.1","es-errors@1.3.0"],["express@4.19.2","qs@6.11.0","side-channel@1.1.0","side-channel-map@1.0.1","get-intrinsic@1.3.0","get-proto@1.0.1","dunder-proto@1.0.1","es-errors@1.3.0"],["express@4.19.2","qs@6.11.0","side-channel@1.1.0","side-channel-weakmap@1.0.2","es-errors@1.3.0"]]},{"name":"es-object-atoms","license":"MIT","version":"1.1.1","type":"transitive","trees":[["express@4.19.2","qs@6.11.0","side-channel@1.1.0","side-channel-map@1.0.1","get-intrinsic@1.3.0","es-object-atoms@1.1.1"],["express@4.19.2","qs@6.11.0","side-channel@1.1.0","side-channel-map@1.0.1","get-intrinsic@1.3.0","get-proto@1.0.1","es-object-atoms@1.1.1"]]},{"name":"escalade","license":"MIT","version":"3.2.0","type":"transitive","trees":[["c8@9.1.0","yargs@17.7.2","escalade@3.2.0"],["mocha@10.4.0","yargs@16.2.0","escalade@3.2.0"]]},{"name":"escape-html","license":"MIT","version":"1.0.3","type":"transitive","trees":[["express@4.19.2","escape-html@1.0.3"],["express@4.19.2","finalhandler@1.2.0","escape-html@1.0.3"],["express@4.19.2","send@0.18.0","escape-html@1.0.3"],["express@4.19.2","serve-static@1.15.0","escape-html@1.0.3"]]},{"name":"escape-string-regexp","license":"MIT","version":"4.0.0","type":"transitive","trees":[["mocha@10.4.0","escape-string-regexp@4.0.0"]]},{"name":"etag","license":"MIT","version":"1.8.1","type":"transitive","trees":[["express@4.19.2","etag@1.8.1"],["express@4.19.2","send@0.18.0","etag@1.8.1"]]},{"name":"event-target-shim","license":"MIT","version":"5.0.1","type":"transitive","trees":[["readable-stream@4.5.2","abort-controller@3.0.0","event-target-shim@5.0.1"]]},{"name":"events","license":"MIT","version":"3.3.0","type":"transitive","trees":[["readable-stream@4.5.2","events@3.3.0"]]},{"name":"express","license":"MIT","version":"4.19.2","type":"dependency","trees":[["express@4.19.2"]]},{"name":"extend","license":"MIT","version":"3.0.2","type":"transitive","trees":[["request@2.88.2","extend@3.0.2"]]},{"name":"extsprintf","license":"MIT","version":"1.3.0","type":"transitive","trees":[["request@2.88.2","http-signature@1.2.0","jsprim@1.4.2","extsprintf@1.3.0"],["request@2.88.2","http-signature@1.2.0","jsprim@1.4.2","verror@1.10.0","extsprintf@1.3.0"]]},{"name":"fast-deep-equal","license":"MIT","version":"3.1.3","type":"transitive","trees":[["request@2.88.2","har-validator@5.1.5","ajv@6.14.0","fast-deep-equal@3.1.3"]]},{"name":"fast-json-stable-stringify","license":"MIT","version":"2.1.0","type":"transitive","trees":[["request@2.88.2","har-validator@5.1.5","ajv@6.14.0","fast-json-stable-stringify@2.1.0"]]},{"name":"fill-range","license":"MIT","version":"7.1.1","type":"transitive","trees":[["mocha@10.4.0","chokidar@3.5.3","braces@3.0.3","fill-range@7.1.1"]]},{"name":"finalhandler","license":"MIT","version":"1.2.0","type":"transitive","trees":[["express@4.19.2","finalhandler@1.2.0"]]},{"name":"find-up","license":"MIT","version":"5.0.0","type":"transitive","trees":[["c8@9.1.0","find-up@5.0.0"],["mocha@10.4.0","find-up@5.0.0"]]},{"name":"flat","license":"BSD-3-Clause","version":"5.0.2","type":"transitive","trees":[["mocha@10.4.0","yargs-unparser@2.0.0","flat@5.0.2"]]},{"name":"foreground-child","license":"ISC","version":"3.3.1","type":"transitive","trees":[["c8@9.1.0","foreground-child@3.3.1"]]},{"name":"forever-agent","license":"Apache-2.0","version":"0.6.1","type":"transitive","trees":[["request@2.88.2","forever-agent@0.6.1"]]},{"name":"form-data","license":"MIT","version":"2.3.3","type":"transitive","trees":[["request@2.88.2","form-data@2.3.3"]]},{"name":"forwarded","license":"MIT","version":"0.2.0","type":"transitive","trees":[["express@4.19.2","proxy-addr@2.0.7","forwarded@0.2.0"]]},{"name":"fresh","license":"MIT","version":"0.5.2","type":"transitive","trees":[["express@4.19.2","fresh@0.5.2"],["express@4.19.2","send@0.18.0","fresh@0.5.2"]]},{"name":"fs.realpath","license":"ISC","version":"1.0.0","type":"transitive","trees":[["c8@9.1.0","test-exclude@6.0.0","glob@7.2.3","fs.realpath@1.0.0"],["mocha@10.4.0","glob@8.1.0","fs.realpath@1.0.0"]]},{"name":"fsevents","license":"MIT","version":"2.3.3","type":"transitive","trees":[["mocha@10.4.0","chokidar@3.5.3","fsevents@2.3.3"]]},{"name":"function-bind","license":"MIT","version":"1.1.2","type":"transitive","trees":[["express@4.19.2","qs@6.11.0","side-channel@1.1.0","side-channel-map@1.0.1","call-bound@1.0.4","call-bind-apply-helpers@1.0.2","function-bind@1.1.2"],["express@4.19.2","qs@6.11.0","side-channel@1.1.0","side-channel-map@1.0.1","get-intrinsic@1.3.0","function-bind@1.1.2"],["express@4.19.2","qs@6.11.0","side-channel@1.1.0","side-channel-map@1.0.1","get-intrinsic@1.3.0","hasown@2.0.3","function-bind@1.1.2"]]},{"name":"get-caller-file","license":"ISC","version":"2.0.5","type":"transitive","trees":[["c8@9.1.0","yargs@17.7.2","get-caller-file@2.0.5"],["mocha@10.4.0","yargs@16.2.0","get-caller-file@2.0.5"]]},{"name":"get-intrinsic","license":"MIT","version":"1.3.0","type":"transitive","trees":[["express@4.19.2","qs@6.11.0","side-channel@1.1.0","side-channel-map@1.0.1","call-bound@1.0.4","get-intrinsic@1.3.0"],["express@4.19.2","qs@6.11.0","side-channel@1.1.0","side-channel-map@1.0.1","get-intrinsic@1.3.0"],["express@4.19.2","qs@6.11.0","side-channel@1.1.0","side-channel-weakmap@1.0.2","get-intrinsic@1.3.0"]]},{"name":"get-proto","license":"MIT","version":"1.0.1","type":"transitive","trees":[["express@4.19.2","qs@6.11.0","side-channel@1.1.0","side-channel-map@1.0.1","get-intrinsic@1.3.0","get-proto@1.0.1"]]},{"name":"getpass","license":"MIT","version":"0.1.7","type":"transitive","trees":[["request@2.88.2","http-signature@1.2.0","sshpk@1.18.0","getpass@0.1.7"]]},{"name":"glob","license":"ISC","version":"7.2.3","type":"transitive","trees":[["c8@9.1.0","test-exclude@6.0.0","glob@7.2.3"]]},{"name":"glob","license":"ISC","version":"8.1.0","type":"transitive","trees":[["mocha@10.4.0","glob@8.1.0"]]},{"name":"glob-parent","license":"ISC","version":"5.1.2","type":"transitive","trees":[["mocha@10.4.0","chokidar@3.5.3","glob-parent@5.1.2"]]},{"name":"gopd","license":"MIT","version":"1.2.0","type":"transitive","trees":[["express@4.19.2","qs@6.11.0","side-channel@1.1.0","side-channel-map@1.0.1","get-intrinsic@1.3.0","get-proto@1.0.1","dunder-proto@1.0.1","gopd@1.2.0"],["express@4.19.2","qs@6.11.0","side-channel@1.1.0","side-channel-map@1.0.1","get-intrinsic@1.3.0","gopd@1.2.0"]]},{"name":"har-schema","license":"ISC","version":"2.0.0","type":"transitive","trees":[["request@2.88.2","har-validator@5.1.5","har-schema@2.0.0"]]},{"name":"har-validator","license":"MIT","version":"5.1.5","type":"transitive","trees":[["request@2.88.2","har-validator@5.1.5"]]},{"name":"has-flag","license":"MIT","version":"4.0.0","type":"transitive","trees":[["c8@9.1.0","istanbul-lib-report@3.0.1","supports-color@7.2.0","has-flag@4.0.0"],["mocha@10.4.0","supports-color@8.1.1","has-flag@4.0.0"]]},{"name":"has-symbols","license":"MIT","version":"1.1.0","type":"transitive","trees":[["express@4.19.2","qs@6.11.0","side-channel@1.1.0","side-channel-map@1.0.1","get-intrinsic@1.3.0","has-symbols@1.1.0"]]},{"name":"hasown","license":"MIT","version":"2.0.3","type":"transitive","trees":[["express@4.19.2","qs@6.11.0","side-channel@1.1.0","side-channel-map@1.0.1","get-intrinsic@1.3.0","hasown@2.0.3"]]},{"name":"he","license":"MIT","version":"1.2.0","type":"transitive","trees":[["mocha@10.4.0","he@1.2.0"]]},{"name":"html-escaper","license":"MIT","version":"2.0.2","type":"transitive","trees":[["c8@9.1.0","istanbul-reports@3.2.0","html-escaper@2.0.2"]]},{"name":"http-errors","license":"MIT","version":"2.0.0","type":"transitive","trees":[["express@4.19.2","body-parser@1.20.2","http-errors@2.0.0"],["express@4.19.2","body-parser@1.20.2","raw-body@2.5.2","http-errors@2.0.0"],["express@4.19.2","http-errors@2.0.0"],["express@4.19.2","send@0.18.0","http-errors@2.0.0"]]},{"name":"http-signature","license":"MIT","version":"1.2.0","type":"transitive","trees":[["request@2.88.2","http-signature@1.2.0"]]},{"name":"iconv-lite","license":"MIT","version":"0.6.3","type":"transitive","trees":[["d3@7.9.0","d3-dsv@3.0.1","iconv-lite@0.6.3"]]},{"name":"iconv-lite","license":"MIT","version":"0.4.24","type":"transitive","trees":[["express@4.19.2","body-parser@1.20.2","iconv-lite@0.4.24"],["express@4.19.2","body-parser@1.20.2","raw-body@2.5.2","iconv-lite@0.4.24"]]},{"name":"ieee754","license":"BSD-3-Clause","version":"1.2.1","type":"transitive","trees":[["readable-stream@4.5.2","buffer@6.0.3","ieee754@1.2.1"]]},{"name":"inflight","license":"ISC","version":"1.0.6","type":"transitive","trees":[["c8@9.1.0","test-exclude@6.0.0","glob@7.2.3","inflight@1.0.6"],["mocha@10.4.0","glob@8.1.0","inflight@1.0.6"]]},{"name":"inherits","license":"ISC","version":"2.0.4","type":"transitive","trees":[["express@4.19.2","http-errors@2.0.0","inherits@2.0.4"],["c8@9.1.0","test-exclude@6.0.0","glob@7.2.3","inherits@2.0.4"],["mocha@10.4.0","glob@8.1.0","inherits@2.0.4"]]},{"name":"internmap","license":"ISC","version":"2.0.3","type":"transitive","trees":[["d3@7.9.0","d3-array@3.2.4","internmap@2.0.3"]]},{"name":"ipaddr.js","license":"MIT","version":"1.9.1","type":"transitive","trees":[["express@4.19.2","proxy-addr@2.0.7","ipaddr.js@1.9.1"]]},{"name":"is-binary-path","license":"MIT","version":"2.1.0","type":"transitive","trees":[["mocha@10.4.0","chokidar@3.5.3","is-binary-path@2.1.0"]]},{"name":"is-extglob","license":"MIT","version":"2.1.1","type":"transitive","trees":[["mocha@10.4.0","chokidar@3.5.3","is-glob@4.0.3","is-extglob@2.1.1"]]},{"name":"is-fullwidth-code-point","license":"MIT","version":"3.0.0","type":"transitive","trees":[["c8@9.1.0","yargs@17.7.2","string-width@4.2.3","is-fullwidth-code-point@3.0.0"]]},{"name":"is-glob","license":"MIT","version":"4.0.3","type":"transitive","trees":[["mocha@10.4.0","chokidar@3.5.3","glob-parent@5.1.2","is-glob@4.0.3"],["mocha@10.4.0","chokidar@3.5.3","is-glob@4.0.3"]]},{"name":"is-number","license":"MIT","version":"7.0.0","type":"transitive","trees":[["mocha@10.4.0","chokidar@3.5.3","braces@3.0.3","fill-range@7.1.1","to-regex-range@5.0.1","is-number@7.0.0"]]},{"name":"is-plain-obj","license":"MIT","version":"2.1.0","type":"transitive","trees":[["mocha@10.4.0","yargs-unparser@2.0.0","is-plain-obj@2.1.0"]]},{"name":"is-typedarray","license":"MIT","version":"1.0.0","type":"transitive","trees":[["request@2.88.2","is-typedarray@1.0.0"]]},{"name":"is-unicode-supported","license":"MIT","version":"0.1.0","type":"transitive","trees":[["mocha@10.4.0","log-symbols@4.1.0","is-unicode-supported@0.1.0"]]},{"name":"isexe","license":"ISC","version":"2.0.0","type":"transitive","trees":[["c8@9.1.0","foreground-child@3.3.1","cross-spawn@7.0.6","which@2.0.2","isexe@2.0.0"]]},{"name":"isstream","license":"MIT","version":"0.1.2","type":"transitive","trees":[["request@2.88.2","isstream@0.1.2"]]},{"name":"istanbul-lib-coverage","license":"BSD-3-Clause","version":"3.2.2","type":"transitive","trees":[["c8@9.1.0","istanbul-lib-coverage@3.2.2"],["c8@9.1.0","istanbul-lib-report@3.0.1","istanbul-lib-coverage@3.2.2"]]},{"name":"istanbul-lib-report","license":"BSD-3-Clause","version":"3.0.1","type":"transitive","trees":[["c8@9.1.0","istanbul-lib-report@3.0.1"],["c8@9.1.0","istanbul-reports@3.2.0","istanbul-lib-report@3.0.1"]]},{"name":"istanbul-reports","license":"BSD-3-Clause","version":"3.2.0","type":"transitive","trees":[["c8@9.1.0","istanbul-reports@3.2.0"]]},{"name":"js-yaml","license":"MIT","version":"4.1.0","type":"transitive","trees":[["mocha@10.4.0","js-yaml@4.1.0"]]},{"name":"jsbn","license":"MIT","version":"0.1.1","type":"transitive","trees":[["request@2.88.2","http-signature@1.2.0","sshpk@1.18.0","ecc-jsbn@0.1.2","jsbn@0.1.1"],["request@2.88.2","http-signature@1.2.0","sshpk@1.18.0","jsbn@0.1.1"]]},{"name":"json-schema","license":"(AFL-2.1 OR BSD-3-Clause)","version":"0.4.0","type":"transitive","trees":[["request@2.88.2","http-signature@1.2.0","jsprim@1.4.2","json-schema@0.4.0"]]},{"name":"json-schema-traverse","license":"MIT","version":"0.4.1","type":"transitive","trees":[["request@2.88.2","har-validator@5.1.5","ajv@6.14.0","json-schema-traverse@0.4.1"]]},{"name":"json-stringify-safe","license":"ISC","version":"5.0.1","type":"transitive","trees":[["request@2.88.2","json-stringify-safe@5.0.1"]]},{"name":"jsonify","license":"Public Domain","version":"0.0.1","type":"dependency","trees":[["jsonify@0.0.1"]]},{"name":"jsprim","license":"MIT","version":"1.4.2","type":"transitive","trees":[["request@2.88.2","http-signature@1.2.0","jsprim@1.4.2"]]},{"name":"locate-path","license":"MIT","version":"6.0.0","type":"transitive","trees":[["c8@9.1.0","find-up@5.0.0","locate-path@6.0.0"]]},{"name":"log-symbols","license":"MIT","version":"4.1.0","type":"transitive","trees":[["mocha@10.4.0","log-symbols@4.1.0"]]},{"name":"loupe","license":"MIT","version":"3.2.1","type":"transitive","trees":[["chai@5.1.1","loupe@3.2.1"]]},{"name":"lru-cache","license":"ISC","version":"6.0.0","type":"transitive","trees":[["semver@7.6.0","lru-cache@6.0.0"]]},{"name":"make-dir","license":"MIT","version":"4.0.0","type":"transitive","trees":[["c8@9.1.0","istanbul-lib-report@3.0.1","make-dir@4.0.0"]]},{"name":"math-intrinsics","license":"MIT","version":"1.1.0","type":"transitive","trees":[["express@4.19.2","qs@6.11.0","side-channel@1.1.0","side-channel-map@1.0.1","get-intrinsic@1.3.0","math-intrinsics@1.1.0"]]},{"name":"media-typer","license":"MIT","version":"0.3.0","type":"transitive","trees":[["express@4.19.2","type-is@1.6.18","media-typer@0.3.0"]]},{"name":"merge-descriptors","license":"MIT","version":"1.0.1","type":"transitive","trees":[["express@4.19.2","merge-descriptors@1.0.1"]]},{"name":"methods","license":"MIT","version":"1.1.2","type":"transitive","trees":[["express@4.19.2","methods@1.1.2"]]},{"name":"mime","license":"MIT","version":"1.6.0","type":"transitive","trees":[["express@4.19.2","send@0.18.0","mime@1.6.0"]]},{"name":"mime-db","license":"MIT","version":"1.52.0","type":"transitive","trees":[["request@2.88.2","mime-types@2.1.35","mime-db@1.52.0"]]},{"name":"mime-types","license":"MIT","version":"2.1.35","type":"transitive","trees":[["express@4.19.2","accepts@1.3.8","mime-types@2.1.35"],["express@4.19.2","type-is@1.6.18","mime-types@2.1.35"],["request@2.88.2","form-data@2.3.3","mime-types@2.1.35"],["request@2.88.2","mime-types@2.1.35"]]},{"name":"minimatch","license":"ISC","version":"3.1.5","type":"transitive","trees":[["c8@9.1.0","test-exclude@6.0.0","glob@7.2.3","minimatch@3.1.5"],["c8@9.1.0","test-exclude@6.0.0","minimatch@3.1.5"]]},{"name":"minimatch","license":"ISC","version":"5.0.1","type":"transitive","trees":[["mocha@10.4.0","glob@8.1.0","minimatch@5.0.1"],["mocha@10.4.0","minimatch@5.0.1"]]},{"name":"mocha","license":"MIT","version":"10.4.0","type":"devDependency","trees":[["mocha@10.4.0"]]},{"name":"ms","license":"MIT","version":"2.0.0","type":"transitive","trees":[["express@4.19.2","debug@2.6.9","ms@2.0.0"]]},{"name":"ms","license":"MIT","version":"2.1.3","type":"transitive","trees":[["express@4.19.2","send@0.18.0","ms@2.1.3"],["mocha@10.4.0","ms@2.1.3"]]},{"name":"ms","license":"MIT","version":"2.1.2","type":"transitive","trees":[["mocha@10.4.0","debug@4.3.4","ms@2.1.2"]]},{"name":"negotiator","license":"MIT","version":"0.6.3","type":"transitive","trees":[["express@4.19.2","accepts@1.3.8","negotiator@0.6.3"]]},{"name":"node-forge","license":"(BSD-3-Clause OR GPL-2.0)","version":"1.3.1","type":"dependency","trees":[["node-forge@1.3.1"]]},{"name":"normalize-path","license":"MIT","version":"3.0.0","type":"transitive","trees":[["mocha@10.4.0","chokidar@3.5.3","anymatch@3.1.3","normalize-path@3.0.0"],["mocha@10.4.0","chokidar@3.5.3","normalize-path@3.0.0"]]},{"name":"oauth-sign","license":"Apache-2.0","version":"0.9.0","type":"transitive","trees":[["request@2.88.2","oauth-sign@0.9.0"]]},{"name":"object-inspect","license":"MIT","version":"1.13.4","type":"transitive","trees":[["express@4.19.2","qs@6.11.0","side-channel@1.1.0","object-inspect@1.13.4"],["express@4.19.2","qs@6.11.0","side-channel@1.1.0","side-channel-list@1.0.1","object-inspect@1.13.4"],["express@4.19.2","qs@6.11.0","side-channel@1.1.0","side-channel-map@1.0.1","object-inspect@1.13.4"],["express@4.19.2","qs@6.11.0","side-channel@1.1.0","side-channel-weakmap@1.0.2","object-inspect@1.13.4"]]},{"name":"on-finished","license":"MIT","version":"2.4.1","type":"transitive","trees":[["express@4.19.2","body-parser@1.20.2","on-finished@2.4.1"],["express@4.19.2","finalhandler@1.2.0","on-finished@2.4.1"],["express@4.19.2","on-finished@2.4.1"],["express@4.19.2","send@0.18.0","on-finished@2.4.1"]]},{"name":"once","license":"ISC","version":"1.4.0","type":"transitive","trees":[["c8@9.1.0","test-exclude@6.0.0","glob@7.2.3","once@1.4.0"],["mocha@10.4.0","glob@8.1.0","inflight@1.0.6","once@1.4.0"],["mocha@10.4.0","glob@8.1.0","once@1.4.0"]]},{"name":"p-limit","license":"MIT","version":"3.1.0","type":"transitive","trees":[["c8@9.1.0","find-up@5.0.0","locate-path@6.0.0","p-locate@5.0.0","p-limit@3.1.0"]]},{"name":"p-locate","license":"MIT","version":"5.0.0","type":"transitive","trees":[["c8@9.1.0","find-up@5.0.0","locate-path@6.0.0","p-locate@5.0.0"]]},{"name":"pako","license":"(MIT AND Zlib)","version":"2.1.0","type":"dependency","trees":[["pako@2.1.0"]]},{"name":"parseurl","license":"MIT","version":"1.3.3","type":"transitive","trees":[["express@4.19.2","finalhandler@1.2.0","parseurl@1.3.3"],["express@4.19.2","parseurl@1.3.3"],["express@4.19.2","serve-static@1.15.0","parseurl@1.3.3"]]},{"name":"path-exists","license":"MIT","version":"4.0.0","type":"transitive","trees":[["c8@9.1.0","find-up@5.0.0","path-exists@4.0.0"]]},{"name":"path-is-absolute","license":"MIT","version":"1.0.1","type":"transitive","trees":[["c8@9.1.0","test-exclude@6.0.0","glob@7.2.3","path-is-absolute@1.0.1"]]},{"name":"path-key","license":"MIT","version":"3.1.1","type":"transitive","trees":[["c8@9.1.0","foreground-child@3.3.1","cross-spawn@7.0.6","path-key@3.1.1"]]},{"name":"path-to-regexp","license":"MIT","version":"0.1.7","type":"transitive","trees":[["express@4.19.2","path-to-regexp@0.1.7"]]},{"name":"pathval","license":"MIT","version":"2.0.1","type":"transitive","trees":[["chai@5.1.1","pathval@2.0.1"]]},{"name":"performance-now","license":"MIT","version":"2.1.0","type":"transitive","trees":[["request@2.88.2","performance-now@2.1.0"]]},{"name":"picomatch","license":"MIT","version":"2.3.2","type":"transitive","trees":[["mocha@10.4.0","chokidar@3.5.3","anymatch@3.1.3","picomatch@2.3.2"],["mocha@10.4.0","chokidar@3.5.3","readdirp@3.6.0","picomatch@2.3.2"]]},{"name":"prettier","license":"MIT","version":"3.2.5","type":"devDependency","trees":[["prettier@3.2.5"]]},{"name":"process","license":"MIT","version":"0.11.10","type":"transitive","trees":[["readable-stream@4.5.2","process@0.11.10"]]},{"name":"proxy-addr","license":"MIT","version":"2.0.7","type":"transitive","trees":[["express@4.19.2","proxy-addr@2.0.7"]]},{"name":"psl","license":"MIT","version":"1.15.0","type":"transitive","trees":[["request@2.88.2","tough-cookie@2.5.0","psl@1.15.0"]]},{"name":"punycode","license":"MIT","version":"2.3.1","type":"transitive","trees":[["request@2.88.2","har-validator@5.1.5","ajv@6.14.0","uri-js@4.4.1","punycode@2.3.1"],["request@2.88.2","tough-cookie@2.5.0","psl@1.15.0","punycode@2.3.1"],["request@2.88.2","tough-cookie@2.5.0","punycode@2.3.1"]]},{"name":"qs","license":"BSD-3-Clause","version":"6.11.0","type":"transitive","trees":[["express@4.19.2","body-parser@1.20.2","qs@6.11.0"],["express@4.19.2","qs@6.11.0"]]},{"name":"qs","license":"BSD-3-Clause","version":"6.5.5","type":"transitive","trees":[["request@2.88.2","qs@6.5.5"]]},{"name":"randombytes","license":"MIT","version":"2.1.0","type":"transitive","trees":[["mocha@10.4.0","serialize-javascript@6.0.0","randombytes@2.1.0"]]},{"name":"range-parser","license":"MIT","version":"1.2.1","type":"transitive","trees":[["express@4.19.2","range-parser@1.2.1"],["express@4.19.2","send@0.18.0","range-parser@1.2.1"]]},{"name":"raw-body","license":"MIT","version":"2.5.2","type":"transitive","trees":[["express@4.19.2","body-parser@1.20.2","raw-body@2.5.2"]]},{"name":"readable-stream","license":"MIT","version":"4.5.2","type":"dependency","trees":[["readable-stream@4.5.2"]]},{"name":"readdirp","license":"MIT","version":"3.6.0","type":"transitive","trees":[["mocha@10.4.0","chokidar@3.5.3","readdirp@3.6.0"]]},{"name":"request","license":"Apache-2.0","version":"2.88.2","type":"dependency","trees":[["request@2.88.2"]]},{"name":"require-directory","license":"MIT","version":"2.1.1","type":"transitive","trees":[["c8@9.1.0","yargs@17.7.2","require-directory@2.1.1"],["mocha@10.4.0","yargs@16.2.0","require-directory@2.1.1"]]},{"name":"robust-predicates","license":"Unlicense","version":"3.0.3","type":"transitive","trees":[["d3@7.9.0","d3-delaunay@6.0.4","delaunator@5.1.0","robust-predicates@3.0.3"]]},{"name":"rw","license":"BSD-3-Clause","version":"1.3.3","type":"transitive","trees":[["d3@7.9.0","d3-dsv@3.0.1","rw@1.3.3"]]},{"name":"rxjs","license":"Apache-2.0","version":"7.8.1","type":"dependency","trees":[["rxjs@7.8.1"]]},{"name":"safe-buffer","license":"MIT","version":"5.2.1","type":"transitive","trees":[["express@4.19.2","content-disposition@0.5.4","safe-buffer@5.2.1"],["express@4.19.2","safe-buffer@5.2.1"],["readable-stream@4.5.2","string_decoder@1.3.0","safe-buffer@5.2.1"],["request@2.88.2","safe-buffer@5.2.1"],["request@2.88.2","tunnel-agent@0.6.0","safe-buffer@5.2.1"],["mocha@10.4.0","serialize-javascript@6.0.0","randombytes@2.1.0","safe-buffer@5.2.1"]]},{"name":"safer-buffer","license":"MIT","version":"2.1.2","type":"transitive","trees":[["d3@7.9.0","d3-dsv@3.0.1","iconv-lite@0.6.3","safer-buffer@2.1.2"],["express@4.19.2","body-parser@1.20.2","iconv-lite@0.4.24","safer-buffer@2.1.2"],["express@4.19.2","body-parser@1.20.2","raw-body@2.5.2","iconv-lite@0.4.24","safer-buffer@2.1.2"],["request@2.88.2","http-signature@1.2.0","sshpk@1.18.0","asn1@0.2.6","safer-buffer@2.1.2"],["request@2.88.2","http-signature@1.2.0","sshpk@1.18.0","ecc-jsbn@0.1.2","safer-buffer@2.1.2"],["request@2.88.2","http-signature@1.2.0","sshpk@1.18.0","safer-buffer@2.1.2"]]},{"name":"semver","license":"ISC","version":"7.6.0","type":"dependency","trees":[["semver@7.6.0"],["c8@9.1.0","istanbul-lib-report@3.0.1","make-dir@4.0.0","semver@7.6.0"]]},{"name":"send","license":"MIT","version":"0.18.0","type":"transitive","trees":[["express@4.19.2","send@0.18.0"],["express@4.19.2","serve-static@1.15.0","send@0.18.0"]]},{"name":"serialize-javascript","license":"BSD-3-Clause","version":"6.0.0","type":"transitive","trees":[["mocha@10.4.0","serialize-javascript@6.0.0"]]},{"name":"serve-static","license":"MIT","version":"1.15.0","type":"transitive","trees":[["express@4.19.2","serve-static@1.15.0"]]},{"name":"setprototypeof","license":"ISC","version":"1.2.0","type":"transitive","trees":[["express@4.19.2","http-errors@2.0.0","setprototypeof@1.2.0"],["express@4.19.2","setprototypeof@1.2.0"]]},{"name":"shebang-command","license":"MIT","version":"2.0.0","type":"transitive","trees":[["c8@9.1.0","foreground-child@3.3.1","cross-spawn@7.0.6","shebang-command@2.0.0"]]},{"name":"shebang-regex","license":"MIT","version":"3.0.0","type":"transitive","trees":[["c8@9.1.0","foreground-child@3.3.1","cross-spawn@7.0.6","shebang-command@2.0.0","shebang-regex@3.0.0"]]},{"name":"side-channel","license":"MIT","version":"1.1.0","type":"transitive","trees":[["express@4.19.2","qs@6.11.0","side-channel@1.1.0"]]},{"name":"side-channel-list","license":"MIT","version":"1.0.1","type":"transitive","trees":[["express@4.19.2","qs@6.11.0","side-channel@1.1.0","side-channel-list@1.0.1"]]},{"name":"side-channel-map","license":"MIT","version":"1.0.1","type":"transitive","trees":[["express@4.19.2","qs@6.11.0","side-channel@1.1.0","side-channel-map@1.0.1"],["express@4.19.2","qs@6.11.0","side-channel@1.1.0","side-channel-weakmap@1.0.2","side-channel-map@1.0.1"]]},{"name":"side-channel-weakmap","license":"MIT","version":"1.0.2","type":"transitive","trees":[["express@4.19.2","qs@6.11.0","side-channel@1.1.0","side-channel-weakmap@1.0.2"]]},{"name":"signal-exit","license":"ISC","version":"4.1.0","type":"transitive","trees":[["c8@9.1.0","foreground-child@3.3.1","signal-exit@4.1.0"]]},{"name":"spdx-exceptions","license":"CC-BY-3.0","version":"2.5.0","type":"dependency","trees":[["spdx-exceptions@2.5.0"]]},{"name":"sshpk","license":"MIT","version":"1.18.0","type":"transitive","trees":[["request@2.88.2","http-signature@1.2.0","sshpk@1.18.0"]]},{"name":"statuses","license":"MIT","version":"2.0.1","type":"transitive","trees":[["express@4.19.2","finalhandler@1.2.0","statuses@2.0.1"],["express@4.19.2","http-errors@2.0.0","statuses@2.0.1"],["express@4.19.2","send@0.18.0","statuses@2.0.1"],["express@4.19.2","statuses@2.0.1"]]},{"name":"string_decoder","license":"MIT","version":"1.3.0","type":"transitive","trees":[["readable-stream@4.5.2","string_decoder@1.3.0"]]},{"name":"string-width","license":"MIT","version":"4.2.3","type":"transitive","trees":[["c8@9.1.0","yargs@17.7.2","cliui@8.0.1","string-width@4.2.3"],["c8@9.1.0","yargs@17.7.2","cliui@8.0.1","wrap-ansi@7.0.0","string-width@4.2.3"],["c8@9.1.0","yargs@17.7.2","string-width@4.2.3"],["mocha@10.4.0","yargs@16.2.0","cliui@7.0.4","string-width@4.2.3"],["mocha@10.4.0","yargs@16.2.0","string-width@4.2.3"]]},{"name":"strip-ansi","license":"MIT","version":"6.0.1","type":"transitive","trees":[["c8@9.1.0","yargs@17.7.2","cliui@8.0.1","strip-ansi@6.0.1"],["c8@9.1.0","yargs@17.7.2","cliui@8.0.1","wrap-ansi@7.0.0","strip-ansi@6.0.1"],["c8@9.1.0","yargs@17.7.2","string-width@4.2.3","strip-ansi@6.0.1"],["mocha@10.4.0","yargs@16.2.0","cliui@7.0.4","strip-ansi@6.0.1"]]},{"name":"strip-json-comments","license":"MIT","version":"3.1.1","type":"transitive","trees":[["mocha@10.4.0","strip-json-comments@3.1.1"]]},{"name":"supports-color","license":"MIT","version":"7.2.0","type":"transitive","trees":[["c8@9.1.0","istanbul-lib-report@3.0.1","supports-color@7.2.0"],["mocha@10.4.0","log-symbols@4.1.0","chalk@4.1.2","supports-color@7.2.0"]]},{"name":"supports-color","license":"MIT","version":"8.1.1","type":"transitive","trees":[["mocha@10.4.0","supports-color@8.1.1"]]},{"name":"taffydb","license":"BSD-2-Clause","version":"2.7.3","type":"dependency","trees":[["taffydb@2.7.3"]]},{"name":"test-exclude","license":"ISC","version":"6.0.0","type":"transitive","trees":[["c8@9.1.0","test-exclude@6.0.0"]]},{"name":"to-regex-range","license":"MIT","version":"5.0.1","type":"transitive","trees":[["mocha@10.4.0","chokidar@3.5.3","braces@3.0.3","fill-range@7.1.1","to-regex-range@5.0.1"]]},{"name":"toidentifier","license":"MIT","version":"1.0.1","type":"transitive","trees":[["express@4.19.2","http-errors@2.0.0","toidentifier@1.0.1"]]},{"name":"tough-cookie","license":"BSD-3-Clause","version":"2.5.0","type":"transitive","trees":[["request@2.88.2","tough-cookie@2.5.0"]]},{"name":"tslib","license":"0BSD","version":"2.6.2","type":"dependency","trees":[["rxjs@7.8.1","tslib@2.6.2"],["tslib@2.6.2"]]},{"name":"tunnel-agent","license":"Apache-2.0","version":"0.6.0","type":"transitive","trees":[["request@2.88.2","tunnel-agent@0.6.0"]]},{"name":"tweetnacl","license":"Unlicense","version":"0.14.5","type":"transitive","trees":[["request@2.88.2","http-signature@1.2.0","sshpk@1.18.0","bcrypt-pbkdf@1.0.2","tweetnacl@0.14.5"],["request@2.88.2","http-signature@1.2.0","sshpk@1.18.0","tweetnacl@0.14.5"]]},{"name":"type-is","license":"MIT","version":"1.6.18","type":"transitive","trees":[["express@4.19.2","body-parser@1.20.2","type-is@1.6.18"],["express@4.19.2","type-is@1.6.18"]]},{"name":"typescript","license":"Apache-2.0","version":"5.4.5","type":"dependency","trees":[["typescript@5.4.5"]]},{"name":"unpipe","license":"MIT","version":"1.0.0","type":"transitive","trees":[["express@4.19.2","body-parser@1.20.2","raw-body@2.5.2","unpipe@1.0.0"],["express@4.19.2","body-parser@1.20.2","unpipe@1.0.0"],["express@4.19.2","finalhandler@1.2.0","unpipe@1.0.0"]]},{"name":"uri-js","license":"BSD-2-Clause","version":"4.4.1","type":"transitive","trees":[["request@2.88.2","har-validator@5.1.5","ajv@6.14.0","uri-js@4.4.1"]]},{"name":"utils-merge","license":"MIT","version":"1.0.1","type":"transitive","trees":[["express@4.19.2","utils-merge@1.0.1"]]},{"name":"uuid","license":"MIT","version":"3.4.0","type":"transitive","trees":[["request@2.88.2","uuid@3.4.0"]]},{"name":"v8-to-istanbul","license":"ISC","version":"9.3.0","type":"transitive","trees":[["c8@9.1.0","v8-to-istanbul@9.3.0"]]},{"name":"vary","license":"MIT","version":"1.1.2","type":"transitive","trees":[["express@4.19.2","vary@1.1.2"]]},{"name":"verror","license":"MIT","version":"1.10.0","type":"transitive","trees":[["request@2.88.2","http-signature@1.2.0","jsprim@1.4.2","verror@1.10.0"]]},{"name":"which","license":"ISC","version":"2.0.2","type":"transitive","trees":[["c8@9.1.0","foreground-child@3.3.1","cross-spawn@7.0.6","which@2.0.2"]]},{"name":"workerpool","license":"Apache-2.0","version":"6.2.1","type":"transitive","trees":[["mocha@10.4.0","workerpool@6.2.1"]]},{"name":"wrap-ansi","license":"MIT","version":"7.0.0","type":"transitive","trees":[["c8@9.1.0","yargs@17.7.2","cliui@8.0.1","wrap-ansi@7.0.0"],["mocha@10.4.0","yargs@16.2.0","cliui@7.0.4","wrap-ansi@7.0.0"]]},{"name":"wrappy","license":"ISC","version":"1.0.2","type":"transitive","trees":[["mocha@10.4.0","glob@8.1.0","inflight@1.0.6","wrappy@1.0.2"],["mocha@10.4.0","glob@8.1.0","once@1.4.0","wrappy@1.0.2"]]},{"name":"y18n","license":"ISC","version":"5.0.8","type":"transitive","trees":[["c8@9.1.0","yargs@17.7.2","y18n@5.0.8"],["mocha@10.4.0","yargs@16.2.0","y18n@5.0.8"]]},{"name":"yallist","license":"ISC","version":"4.0.0","type":"transitive","trees":[["semver@7.6.0","lru-cache@6.0.0","yallist@4.0.0"]]},{"name":"yargs","license":"MIT","version":"17.7.2","type":"transitive","trees":[["c8@9.1.0","yargs@17.7.2"]]},{"name":"yargs","license":"MIT","version":"16.2.0","type":"transitive","trees":[["mocha@10.4.0","yargs@16.2.0"]]},{"name":"yargs-parser","license":"ISC","version":"21.1.1","type":"transitive","trees":[["c8@9.1.0","yargs-parser@21.1.1"],["c8@9.1.0","yargs@17.7.2","yargs-parser@21.1.1"]]},{"name":"yargs-parser","license":"ISC","version":"20.2.4","type":"transitive","trees":[["mocha@10.4.0","yargs-parser@20.2.4"],["mocha@10.4.0","yargs@16.2.0","yargs-parser@20.2.4"]]},{"name":"yargs-unparser","license":"MIT","version":"2.0.0","type":"transitive","trees":[["mocha@10.4.0","yargs-unparser@2.0.0"]]},{"name":"yocto-queue","license":"MIT","version":"0.1.0","type":"transitive","trees":[["c8@9.1.0","find-up@5.0.0","locate-path@6.0.0","p-locate@5.0.0","p-limit@3.1.0","yocto-queue@0.1.0"]]}];
 
-      const dependencyCount = licenseData.filter((item) => item.type === "dependency").length;
-      const devDependencyCount = licenseData.filter((item) => item.type === "devDependency").length;
-      const transitiveCount = licenseData.filter((item) => item.type === "transitive").length;
+      /**
+       * `<license-filter name="MIT" count="12">` — one license filter checkbox.
+       *
+       * Reads `name` and `count` once when first connected. Dispatches a bubbling
+       * `filter-change` CustomEvent when toggled. Exposes `.checked` for the
+       * coordinator to read during filtering.
+       */
+      class LicenseFilter extends HTMLElement {
+        static template = (() => {
+          const t = document.createElement("template");
+          t.innerHTML = `
+            <label>
+              <input type="checkbox" checked />
+              <span class="license-name"></span>
+              <span class="license-count"></span>
+            </label>
+          `;
+          return t;
+        })();
 
-      function renderFilters() {
-        const template = document.getElementById("filter-template");
-        const container = document.querySelector(".license-filters");
-        container.innerHTML = "";
-        for (const [license, count] of Object.entries(licenseCount)) {
-          const clone = template.content.cloneNode(true);
-          clone.querySelector("input").value = license;
-          clone.querySelector("input").checked = true;
-          clone.querySelector(".license-name-count").innerHTML = `${license} (${count})`;
-          clone.querySelector("label").className = license === "UNKNOWN" ? "unknown-license" : "";
-          container.appendChild(clone);
+        connectedCallback() {
+          if (this._built) return;
+          this.replaceChildren(LicenseFilter.template.content.cloneNode(true));
+          const name = this.getAttribute("name") ?? "";
+          const count = this.getAttribute("count") ?? "";
+          this.querySelector("label").className =
+            name === UNKNOWN_LICENSE ? "unknown-license" : "";
+          this._input = this.querySelector("input");
+          this._input.value = name;
+          this._input.addEventListener("change", () => {
+            this.dispatchEvent(new CustomEvent("filter-change", { bubbles: true }));
+          });
+          this.querySelector(".license-name").textContent = name;
+          this.querySelector(".license-count").textContent = count;
+          this._built = true;
         }
-        document.getElementById("dependencyCount").textContent = `(${dependencyCount})`;
-        document.getElementById("devDependencyCount").textContent = `(${devDependencyCount})`;
-        document.getElementById("transitiveCount").textContent = `(${transitiveCount})`;
+
+        /** @returns {boolean} */
+        get checked() {
+          return this._input.checked;
+        }
+
+        /** @param {boolean} v */
+        set checked(v) {
+          this._input.checked = v;
+        }
+
+        /** @returns {string} */
+        get name() {
+          return this.getAttribute("name") ?? "";
+        }
       }
-      renderFilters();
+      customElements.define("license-filter", LicenseFilter);
 
       /**
-       * Create an SPDX license link
-       * @param {string} id - License identifier
-       * @returns {string} HTML link to SPDX license page
-       */
-      const spdxLink = (id) =>
-        `<a target="_blank" href="https://spdx.org/licenses/${id}.html">${id}</a>`;
-      const spdxOperators = ["AND", "OR", "WITH"];
-      const spdxRegex = new RegExp(`\\s+(${spdxOperators.join("|")})\\s+`, "g");
-
-      /**
-       * Linkify a license name if possible to https://spdx.org/licenses/
+       * `<dependency-tree>` — renders an indented dependency path tree.
        *
-       * There are packages that handle parsing SPDX expressions
-       * (like https://www.npmjs.com/package/spdx-expression-parse)
-       * but because I want to keep this script dependency-free,
-       * I'm implementing a simple parser that handles the most common cases.
-       *
-       * @param {string} license
-       * @returns {string} HTML-formatted license with links
+       * Receives data via the `.trees` property: an array of arrays of strings,
+       * where each inner array is one path from a top-level dep down to the package.
        */
-      function linkifyLicense(license = "") {
-        if (
-          !license ||
-          license === UNKNOWN_LICENSE ||
-          license.includes("SEE LICENSE") ||
-          license === "UNLICENSED"
-        ) {
-          return license;
+      class DependencyTree extends HTMLElement {
+        connectedCallback() {
+          if (this._trees) this.render();
         }
 
-        // Handle complex license expressions
-        // (BSD-2-Clause OR MIT OR Apache-2.0)
-        // (MIT AND CC0-1.0)
-        // (GPL-2.0+ WITH Bison-exception-2.2)
-        // for now it will not handle nested parentheses: (MIT AND (LGPL-2.1+ AND BSD-3-Clause))
-        if (license.startsWith("(") && license.endsWith(")")) {
-          // remove the outer parentheses and process the inner expression
-          const inner = license.slice(1, -1);
-
-          // if the inner expressions still contains parentheses, we won't try to parse it further
-          if (inner.includes("(")) {
-            // just link them to the main list of licenses and they can search there
-            return `<a target="_blank" href="https://spdx.org/licenses/">${license}</a>`;
-          }
-
-          // split by AND/OR/WITH and linkify each part and bring it back to
-          // together with the original operator
-          return inner
-            .split(spdxRegex)
-            .filter((x) => !!x.trim())
-            .map((part) => {
-              part = part.trim();
-              if (spdxOperators.includes(part)) {
-                return ` ${part} `;
-              }
-              return spdxLink(part);
-            })
-            .join("");
+        /** @param {string[][]} value */
+        set trees(value) {
+          this._trees = value;
+          if (this.isConnected) this.render();
         }
 
-        return spdxLink(license);
-      }
+        get trees() {
+          return this._trees;
+        }
 
-      function renderRows() {
-        const template = document.getElementById("row-template");
-        const tbody = document.getElementById("license-details-body");
-        tbody.innerHTML = "";
-        for (const info of licenseData) {
-          const clone = template.content.cloneNode(true);
-          clone.querySelector("tr").setAttribute("data-license", info.license);
-          clone.querySelector("tr").setAttribute("data-type", info.type);
-          clone.querySelector("summary").textContent = info.name;
-          const treeContainer = clone.querySelector("details span");
-          treeContainer.innerHTML = "";
-          info.trees.forEach((tree, treeIndex) => {
-            if (treeIndex > 0) {
-              treeContainer.appendChild(document.createElement("hr"));
-            }
+        render() {
+          const frag = document.createDocumentFragment();
+          this._trees.forEach((tree, treeIndex) => {
+            if (treeIndex > 0) frag.appendChild(document.createElement("hr"));
             tree.forEach((item, i) => {
               const code = document.createElement("code");
               code.style.paddingLeft = `${i * 20}px`;
               code.textContent = item;
-              treeContainer.appendChild(code);
+              frag.appendChild(code);
             });
           });
-          clone.querySelector(".registry-link").href = `https://www.npmjs.com/package/${info.name}/v/${info.version}/`;
-          clone.querySelector("td.pkg-version").textContent = info.version;
-          clone.querySelector("td.pkg-license").innerHTML = linkifyLicense(info.license);
-
-          clone.querySelector(".pill").classList.add(info.type);
-          clone.querySelector(".pill").textContent = info.type;
-          tbody.appendChild(clone);
+          this.replaceChildren(frag);
         }
       }
-      renderRows();
+      customElements.define("dependency-tree", DependencyTree);
+
+      /**
+       * `<license-link expr="(MIT OR Apache-2.0)">` — renders an SPDX license
+       * expression as one or more links to https://spdx.org/licenses/.
+       *
+       * Handles common expressions: bare ids (MIT), grouped (BSD-2-Clause OR MIT),
+       * conjunctions (MIT AND CC0-1.0), exceptions (GPL-2.0+ WITH Bison-exception-2.2).
+       * Nested parentheses fall back to a single link to the SPDX listing — keeps
+       * this dependency-free (no spdx-expression-parse).
+       */
+      class LicenseLink extends HTMLElement {
+        static observedAttributes = ["expr"];
+        static OPERATORS = ["AND", "OR", "WITH"];
+        static SPLIT_RE = new RegExp(
+          `\\s+(${LicenseLink.OPERATORS.join("|")})\\s+`,
+          "g"
+        );
+
+        connectedCallback() {
+          this.render();
+        }
+
+        attributeChangedCallback() {
+          if (this.isConnected) this.render();
+        }
+
+        render() {
+          this.replaceChildren(
+            ...LicenseLink.parse(this.getAttribute("expr") ?? "")
+          );
+        }
+
+        /**
+         * @param {string} expr
+         * @returns {Node[]}
+         */
+        static parse(expr) {
+          if (
+            !expr ||
+            expr === UNKNOWN_LICENSE ||
+            expr.includes("SEE LICENSE") ||
+            expr === "UNLICENSED"
+          ) {
+            return [document.createTextNode(expr)];
+          }
+          if (expr.startsWith("(") && expr.endsWith(")")) {
+            const inner = expr.slice(1, -1);
+            if (inner.includes("(")) {
+              return [LicenseLink.makeLink(expr, "https://spdx.org/licenses/")];
+            }
+            return inner
+              .split(LicenseLink.SPLIT_RE)
+              .filter((x) => !!x.trim())
+              .map((part) => {
+                part = part.trim();
+                if (LicenseLink.OPERATORS.includes(part)) {
+                  return document.createTextNode(` ${part} `);
+                }
+                return LicenseLink.makeLink(
+                  part,
+                  `https://spdx.org/licenses/${part}.html`
+                );
+              });
+          }
+          return [
+            LicenseLink.makeLink(expr, `https://spdx.org/licenses/${expr}.html`),
+          ];
+        }
+
+        /**
+         * @param {string} text
+         * @param {string} href
+         * @returns {HTMLAnchorElement}
+         */
+        static makeLink(text, href) {
+          const a = document.createElement("a");
+          a.target = "_blank";
+          a.href = href;
+          a.textContent = text;
+          return a;
+        }
+      }
+      customElements.define("license-link", LicenseLink);
+
+      /**
+       * `<license-row>` — one row in the licenses table.
+       *
+       * Set `.data` to a license info object to render. Reflects `data-license`
+       * and `data-type` for filtering. Hide via the native `hidden` attribute
+       * (the parent grid CSS recognises `[hidden]`).
+       *
+       * @typedef {{
+       *   name: string,
+       *   license: string,
+       *   version: string,
+       *   type: 'dependency'|'devDependency'|'transitive',
+       *   trees: string[][]
+       * }} LicenseInfo
+       */
+      class LicenseRow extends HTMLElement {
+        static template = (() => {
+          const t = document.createElement("template");
+          t.innerHTML = `
+            <div class="cell pkg-name" role="cell">
+              <details>
+                <summary></summary>
+                <dependency-tree></dependency-tree>
+              </details>
+            </div>
+            <div class="cell pkg-version" role="cell"></div>
+            <div class="cell" role="cell">
+              <license-link></license-link>
+            </div>
+            <div class="cell" role="cell">
+              <a class="registry-link" target="_blank">npm</a>
+            </div>
+            <div class="cell type-cell" role="cell">
+              <span class="pill"></span>
+            </div>
+          `;
+          return t;
+        })();
+
+        connectedCallback() {
+          if (!this._built) {
+            this.setAttribute("role", "row");
+            this.replaceChildren(LicenseRow.template.content.cloneNode(true));
+            this._built = true;
+          }
+          if (this._data) this.update();
+        }
+
+        /** @param {LicenseInfo} info */
+        set data(info) {
+          this._data = info;
+          if (this._built) this.update();
+        }
+
+        get data() {
+          return this._data;
+        }
+
+        set detailsOpen(open) {
+          this.querySelector("details").open = open;
+        }
+
+        update() {
+          const info = this._data;
+          this.dataset.license = info.license;
+          this.dataset.type = info.type;
+          this.querySelector("summary").textContent = info.name;
+          this.querySelector("dependency-tree").trees = info.trees;
+          this.querySelector(
+            ".registry-link"
+          ).href = `https://www.npmjs.com/package/${info.name}/v/${info.version}/`;
+          this.querySelector(".pkg-version").textContent = info.version;
+          this.querySelector("license-link").setAttribute("expr", info.license);
+          const pill = this.querySelector(".pill");
+          pill.className = `pill ${info.type}`;
+          pill.textContent = info.type;
+        }
+      }
+      customElements.define("license-row", LicenseRow);
+
+      // ─── Coordinator (filters → row visibility) ─────────────────────────
 
       const $ = document.querySelector.bind(document);
-      const $$ = document.querySelectorAll.bind(document);
 
-      /**
-       * @type {HTMLTableRowElement[]}
-       */
-      const rows = Array.from($$("#license-details-body tr"));
-
-      /**
-       * @type {HTMLInputElement[]}
-       */
-      const checkboxes = Array.from($$('.license-filters input[type="checkbox"]'));
-
-      /** @type {HTMLInputElement} */
-      const showDirectProd = $("#filterDependency");
-
-      /** @type {HTMLInputElement} */
-      const showDirectDev = $("#filterDevDependency");
-
-      /** @type {HTMLInputElement} */
-      const showTransitive = $("#filterTransitive");
-
-      function filterTable(e) {
-        const checkedLicenseFilters = checkboxes.filter((cb) => cb.checked);
-        const checkedLicenses = new Set(checkedLicenseFilters.map((cb) => cb.value));
-
-        requestAnimationFrame(() => {
-          rows.forEach((row) => {
-            const license = row.getAttribute("data-license");
-            const type = row.getAttribute("data-type");
-            const shouldShowDirectProd = showDirectProd.checked && type === "dependency";
-            const shouldShowDirectDev = showDirectDev.checked && type === "devDependency";
-            const shouldShowTransitive = showTransitive.checked && type === "transitive";
-            const shouldShow =
-              license &&
-              checkedLicenses.has(license) &&
-              (shouldShowDirectProd || shouldShowTransitive || shouldShowDirectDev);
-            row.classList.toggle("hidden", !shouldShow);
-          });
-        });
-      }
+      const dependencyCount = licenseData.filter((i) => i.type === "dependency").length;
+      const devDependencyCount = licenseData.filter((i) => i.type === "devDependency").length;
+      const transitiveCount = licenseData.filter((i) => i.type === "transitive").length;
 
       function debounce(func, wait) {
         let timeout;
-        return function executedFunction(...args) {
-          const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-          };
+        return function (...args) {
           clearTimeout(timeout);
-          timeout = setTimeout(later, wait);
+          timeout = setTimeout(() => func(...args), wait);
         };
       }
 
-      const debouncedFilterTable = debounce(filterTable, 100); // 100ms delay
+      function filterRows() {
+        const checkedLicenses = new Set(
+          Array.from(document.querySelectorAll("license-filter"))
+            .filter((f) => f.checked)
+            .map((f) => f.name)
+        );
+        const showProd = $("#filterDependency").checked;
+        const showDev = $("#filterDevDependency").checked;
+        const showTransitive = $("#filterTransitive").checked;
 
-      function attachFilterListeners() {
-        checkboxes.forEach((checkbox) => {
-          checkbox.addEventListener("change", debouncedFilterTable);
-        });
-
-        $("#selectAll")?.addEventListener("change", (e) => {
-          const checked = /** @type {HTMLInputElement} */ (e.target)?.checked;
-          checkboxes.forEach((checkbox) => {
-            checkbox.checked = checked;
+        requestAnimationFrame(() => {
+          document.querySelectorAll("license-row").forEach((row) => {
+            const { license, type } = row.dataset;
+            const typeAllowed =
+              (showProd && type === "dependency") ||
+              (showDev && type === "devDependency") ||
+              (showTransitive && type === "transitive");
+            row.hidden = !(license && checkedLicenses.has(license) && typeAllowed);
           });
-          debouncedFilterTable();
         });
-
-        $("#filterDependency")?.addEventListener("change", debouncedFilterTable);
-
-        $("#filterDevDependency")?.addEventListener("change", debouncedFilterTable);
-
-        $("#filterTransitive")?.addEventListener("change", debouncedFilterTable);
       }
 
-      attachFilterListeners();
+      const onFilterChange = debounce(filterRows, 100);
+
+      function renderFilters() {
+        const container = $("#license-filters");
+        // sort licenseCount by value desc, then key asc
+        const sortedLicenses = Object.entries(licenseCount).sort((a, b) => {
+          const countDiff = b[1] - a[1];
+          if (countDiff !== 0) return countDiff;
+          return a[0].localeCompare(b[0]);
+        });
+        for (const [name, count] of sortedLicenses) {
+          const filter = document.createElement("license-filter");
+          filter.setAttribute("name", name);
+          filter.setAttribute("count", count);
+          container.appendChild(filter);
+        }
+        $("#dependencyCount").textContent = `(${dependencyCount})`;
+        $("#devDependencyCount").textContent = `(${devDependencyCount})`;
+        $("#transitiveCount").textContent = `(${transitiveCount})`;
+      }
+
+      function renderRows() {
+        const table = $(".license-table");
+        for (const info of licenseData) {
+          const row = document.createElement("license-row");
+          table.appendChild(row);
+          row.data = info;
+        }
+      }
+
+      renderFilters();
+      renderRows();
+
+      $("#license-filters").addEventListener("filter-change", onFilterChange);
+      $("#filterDependency").addEventListener("change", onFilterChange);
+      $("#filterDevDependency").addEventListener("change", onFilterChange);
+      $("#filterTransitive").addEventListener("change", onFilterChange);
+      $("#selectAll").addEventListener("change", (e) => {
+        document.querySelectorAll("license-filter").forEach((f) => {
+          f.checked = e.target.checked;
+        });
+        onFilterChange();
+      });
+      $('#toggle-details').addEventListener("click", () => {
+        const anyOpen = Array.from(document.querySelectorAll("license-row details")).some(
+          (d) => d.open
+        );
+        document.querySelectorAll("license-row").forEach((row) => {
+          row.detailsOpen = !anyOpen;
+        });
+      });
     </script>
   </body>
 </html>
