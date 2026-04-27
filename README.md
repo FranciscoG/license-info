@@ -14,7 +14,7 @@ npx license-info
 npx license-info --open --output=./report.html
 ```
 
-[Click here to see a demo of the report](demo/license-report.html?raw=1)
+[Click here to see a demo of the report](https://franciscog.github.io/license-info/demo/license-report.html)
 
 ## CLI Flags
 
