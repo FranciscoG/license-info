@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "../lib/index.js --open"
+    "test": "../lib/index.js"
   },
   "keywords": [],
   "author": "",

@@ -8,6 +8,10 @@
         font-family: Arial, sans-serif;
         margin: 20px;
       }
+      header, main {
+        max-width: 1200px;
+        margin: auto;
+      }
       fieldset {
         margin-bottom: 1rem;
       }
@@ -20,7 +24,7 @@
       }
 
       .license-filters {
-        column-width: 400px; /* or use column-count: 3; */
+        column-width: 300px;
         column-gap: 1rem;
         border-top: 1px solid #ccc;
         padding-top: 7px;
@@ -29,7 +33,7 @@
         break-inside: avoid;
         display: block;
       }
-      .license-count {
+      .count-badge {
         font-size: 0.8rem;
         background-color: #666;
         margin-left: 4px;
@@ -38,10 +42,14 @@
         border-radius: 6px;
         color: white;
       }
+      .dependency-type-filters {
+        column-width: 300px;
+        column-gap: 1rem;
+      }
 
       .license-table {
         display: grid;
-        grid-template-columns: 2fr 1fr 1fr 2fr 1fr;
+        grid-template-columns: 2fr 1fr 1fr 1fr;
         border: 1px solid #ddd;
         border-bottom: none;
       }
@@ -78,13 +86,14 @@
         text-align: center;
       }
       .pill.dependency {
-        background-color: #4caf50;
+        background-color: #2e7d32;
       }
       .pill.transitive {
-        background-color: #2196f3;
+        background-color: #1565c0;
       }
       .pill.devDependency {
         background-color: #ff9800;
+        color: #1a1a1a;
       }
 
       .type-cell {
@@ -93,7 +102,7 @@
       }
 
       .unknown-license {
-        color: red;
+        color: rgb(176, 0, 0);
         font-weight: bold;
       }
 
@@ -108,43 +117,49 @@
     </style>
   </head>
   <body>
-    <h1>Dependency licenses for {{projectName}}</h1>
-    <form>
-      <fieldset>
-        <legend>Filter by License</legend>
-        <label>
-          <input id="selectAll" type="checkbox" value="ALL" checked />
-          Select All
-        </label>
-        <div id="license-filters" class="license-filters"></div>
-      </fieldset>
-      <fieldset>
-        <legend>Filter by Dependency Type</legend>
-        <label>
-          <input id="filterDependency" type="checkbox" value="dependency" checked />
-          dependencies <span id="dependencyCount"></span>
-        </label>
-        <label>
-          <input id="filterDevDependency" type="checkbox" value="devDependency" checked />
-          devDependencies <span id="devDependencyCount"></span>
-        </label>
-        <label>
-          <input id="filterTransitive" type="checkbox" value="transitive" checked />
-          transitive dependencies <span id="transitiveCount"></span>
-        </label>
-      </fieldset>
-    </form>
+    <header>
+      <h1>Dependency licenses for {{projectName}}</h1>
+    </header>
+    <main>
+      <form>
+        <fieldset>
+          <legend>Filter by License</legend>
+          <label>
+            <input id="selectAll" type="checkbox" value="ALL" checked />
+            Select All
+          </label>
+          <div id="license-filters" class="license-filters"></div>
+        </fieldset>
+        <fieldset>
+          <legend>Filter by Dependency Type</legend>
+          <div class="dependency-type-filters">
+            <label>
+              <input id="filterDependency" type="checkbox" value="dependency" checked />
+              <span class="pill dependency">dependencies</span>
+              <span id="dependencyCount" class="count-badge"></span>
+            </label>
+            <label>
+              <input id="filterDevDependency" type="checkbox" value="devDependency" checked />
+              <span class="pill devDependency">devDependencies</span>
+              <span id="devDependencyCount" class="count-badge"></span>
+            </label>
+            <label title="Also known as indirect dependencies, they are dependencies of your dependencies.">
+              <input id="filterTransitive" type="checkbox" value="transitive" checked />
+              <span class="pill transitive">transitive</span> <span id="transitiveCount" class="count-badge"></span>
+            </label>
+          </div>
+        </fieldset>
+      </form>
 
-    <div class="license-table" role="table" aria-label="Dependency licenses">
-      <div class="header-row" role="row">
-        <div class="cell" role="columnheader">Package <button type="button" id="toggle-details" aria-expanded="false">Expand all details</button></div>
-        <div class="cell" role="columnheader">Version</div>
-        <div class="cell" role="columnheader">License</div>
-        <div class="cell" role="columnheader">Link</div>
-        <div class="cell" role="columnheader">Type</div>
+      <div class="license-table" role="table" aria-label="Dependency licenses">
+        <div class="header-row" role="row">
+          <div class="cell" role="columnheader">Package <button type="button" id="toggle-details" aria-expanded="false">Expand all details</button></div>
+          <div class="cell" role="columnheader">Version</div>
+          <div class="cell" role="columnheader">License</div>
+          <div class="cell" role="columnheader">Type</div>
+        </div>
       </div>
-    </div>
-
+    </main>
     <script>
       const UNKNOWN_LICENSE = "UNKNOWN";
 
@@ -189,7 +204,7 @@
             <label>
               <input type="checkbox" checked />
               <span class="license-name"></span>
-              <span class="license-count"></span>
+              <span class="license-count count-badge"></span>
             </label>
           `;
           return t;
@@ -342,6 +357,7 @@
         static makeLink(text, href) {
           const a = document.createElement("a");
           a.target = "_blank";
+          a.rel = "noreferrer";
           a.href = href;
           a.textContent = text;
           return a;
@@ -374,12 +390,11 @@
                 <dependency-tree></dependency-tree>
               </details>
             </div>
-            <div class="cell pkg-version" role="cell"></div>
-            <div class="cell" role="cell">
-              <license-link></license-link>
+            <div class="cell pkg-version" role="cell">
+              <a class="registry-link" target="_blank" rel="noreferrer"></a>
             </div>
             <div class="cell" role="cell">
-              <a class="registry-link" target="_blank">npm</a>
+              <license-link></license-link>
             </div>
             <div class="cell type-cell" role="cell">
               <span class="pill"></span>
@@ -415,13 +430,23 @@
           const info = this._data;
           this.dataset.license = info.license;
           this.dataset.type = info.type;
+
+          // package name cell
+          // - details summary text is the package name
           this.querySelector("summary").textContent = info.name;
+          // - details content is the dependency tree(s)
           this.querySelector("dependency-tree").trees = info.trees;
-          this.querySelector(
-            ".registry-link"
-          ).href = `https://www.npmjs.com/package/${info.name}/v/${info.version}/`;
-          this.querySelector(".pkg-version").textContent = info.version;
+          
+          // version column cell
+          const registryLink = this.querySelector(".registry-link");
+          registryLink.href = `https://www.npmjs.com/package/${info.name}/v/${info.version}/`;
+          registryLink.setAttribute("aria-label", `npm page for ${info.name}`);
+          this.querySelector(".pkg-version a").textContent = info.version;
+
+          // license column cell
           this.querySelector("license-link").setAttribute("expr", info.license);
+          
+          // type column cell
           const pill = this.querySelector(".pill");
           pill.className = `pill ${info.type}`;
           pill.textContent = info.type;
@@ -429,7 +454,6 @@
       }
       customElements.define("license-row", LicenseRow);
 
-      // ─── Coordinator (filters → row visibility) ─────────────────────────
 
       const $ = document.querySelector.bind(document);
 
@@ -483,9 +507,9 @@
           filter.setAttribute("count", count);
           container.appendChild(filter);
         }
-        $("#dependencyCount").textContent = `(${dependencyCount})`;
-        $("#devDependencyCount").textContent = `(${devDependencyCount})`;
-        $("#transitiveCount").textContent = `(${transitiveCount})`;
+        $("#dependencyCount").textContent = dependencyCount;
+        $("#devDependencyCount").textContent = devDependencyCount;
+        $("#transitiveCount").textContent = transitiveCount;
       }
 
       function renderRows() {
