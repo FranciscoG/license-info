@@ -8,20 +8,27 @@
     :root {
       color-scheme: light dark;
       --container-width: 1200px;
+      /* typography */
       --text-color: light-dark(#1f2937, #e5e7eb);
       --page-bg: light-dark(#ffffff, #0f172a);
+      --link-color: light-dark(#005fcc, #8ab4f8);
+      --focus-ring: light-dark(#005fcc, #8ab4f8);
+      /* borders */
       --muted-border: light-dark(#c9d1da, #475569);
+      --table-border: light-dark(#d4d8dd, #4b5563);
+      /* count badge */
       --badge-bg: light-dark(#dde6ed, #334155);
       --badge-fg: light-dark(#2e4a5e, #dbe7f3);
-      --table-border: light-dark(#d4d8dd, #4b5563);
+      /* table surfaces */
       --table-header-bg: light-dark(#f2f2f2, #1f2937);
-      --table-row-alt-bg: light-dark(#f4fbfd, #111827);
-      --link-color: light-dark(#005fcc, #8ab4f8);
+      --table-row-alt-bg: light-dark(#e8f2f7, #1b2638);
+      /* pills */
       --pill-fg-on-dark: light-dark(#ffffff, #f8fafc);
       --pill-dependency-bg: light-dark(#2e7d32, #237734);
       --pill-transitive-bg: light-dark(#1565c0, #1d4ed8);
       --pill-dev-bg: light-dark(#ff9800, #f59e0b);
       --pill-dev-fg: light-dark(#1a1a1a, #221300);
+      /* status */
       --unknown-license-fg: light-dark(#b00000, #ff9b9b);
     }
 
@@ -129,6 +136,16 @@
       background: var(--table-row-alt-bg);
     }
 
+    @supports selector(.license-table>license-row:nth-child(1 of license-row:not([hidden]))) {
+      .license-table>license-row:nth-of-type(even) .cell {
+        background: transparent;
+      }
+
+      .license-table>license-row:nth-child(even of license-row:not([hidden])) .cell {
+        background: var(--table-row-alt-bg);
+      }
+    }
+
     .pill {
       display: inline-block;
       padding: 2px 8px;
@@ -165,6 +182,12 @@
       color: var(--link-color);
     }
 
+    :focus-visible {
+      outline: 2px solid var(--focus-ring);
+      outline-offset: 2px;
+      border-radius: 2px;
+    }
+
     dependency-tree {
       display: block;
       padding-top: 0.5rem;
@@ -198,6 +221,7 @@
       margin: 0;
       padding-left: 0;
       list-style-position: outside;
+      font-size: 0.85rem;
     }
 
     .footnotes li {
