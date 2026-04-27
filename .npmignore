@@ -1,0 +1,10 @@
+tests/
+demo/
+*.md
+!README.md
+.github/
+.vscode/
+.claude/
+.ai/
+.gitignore
+jsconfig.json

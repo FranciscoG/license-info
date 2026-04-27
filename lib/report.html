@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <title>Dependency Licenses</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --container-width: 1200px;
+      /* typography */
+      --text-color: light-dark(#1f2937, #e5e7eb);
+      --page-bg: light-dark(#ffffff, #0f172a);
+      --link-color: light-dark(#005fcc, #8ab4f8);
+      --focus-ring: light-dark(#005fcc, #8ab4f8);
+      /* borders */
+      --muted-border: light-dark(#c9d1da, #475569);
+      --table-border: light-dark(#d4d8dd, #4b5563);
+      /* count badge */
+      --badge-bg: light-dark(#dde6ed, #334155);
+      --badge-fg: light-dark(#2e4a5e, #dbe7f3);
+      /* table surfaces */
+      --table-header-bg: light-dark(#f2f2f2, #1f2937);
+      --table-row-alt-bg: light-dark(#e8f2f7, #1b2638);
+      /* pills */
+      --pill-fg-on-dark: light-dark(#ffffff, #f8fafc);
+      --pill-dependency-bg: light-dark(#2e7d32, #237734);
+      --pill-transitive-bg: light-dark(#1565c0, #1d4ed8);
+      --pill-dev-bg: light-dark(#ff9800, #f59e0b);
+      --pill-dev-fg: light-dark(#1a1a1a, #221300);
+      /* status */
+      --unknown-license-fg: light-dark(#b00000, #ff9b9b);
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html {
+        scroll-behavior: auto;
+      }
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      color: var(--text-color);
+      background-color: var(--page-bg);
+    }
+
+    header,
+    main {
+      max-width: var(--container-width);
+      margin: auto;
+    }
+
+    fieldset {
+      margin-bottom: 1rem;
+    }
+
+    legend {
+      font-weight: bold;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    .license-filters {
+      column-width: 300px;
+      column-gap: 1rem;
+      border-top: 1px solid var(--muted-border);
+      padding-top: 7px;
+    }
+
+    .license-filters>* {
+      break-inside: avoid;
+      display: block;
+    }
+
+    .count-badge {
+      font-size: 0.75rem;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+      background-color: var(--badge-bg);
+      margin-left: 6px;
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 7px;
+      border-radius: 999px;
+      color: var(--badge-fg);
+      vertical-align: middle;
+    }
+
+    .dependency-type-filters {
+      column-width: 300px;
+      column-gap: 1rem;
+    }
+
+    .license-table {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      border: 1px solid var(--table-border);
+      border-bottom: none;
+    }
+
+    .license-table>* {
+      display: contents;
+    }
+
+    .license-table>[hidden] {
+      display: none;
+    }
+
+    .license-table .cell {
+      padding: 8px;
+      border-bottom: 1px solid var(--table-border);
+      border-right: 1px solid var(--table-border);
+    }
+
+    .license-table .cell:nth-child(5n) {
+      border-right: none;
+    }
+
+    .license-table .header-row .cell {
+      background-color: var(--table-header-bg);
+      font-weight: bold;
+      position: sticky;
+      top: 0;
+    }
+
+    .license-table>license-row:nth-of-type(even) .cell {
+      background: var(--table-row-alt-bg);
+    }
+
+    @supports selector(.license-table>license-row:nth-child(1 of license-row:not([hidden]))) {
+      .license-table>license-row:nth-of-type(even) .cell {
+        background: transparent;
+      }
+
+      .license-table>license-row:nth-child(even of license-row:not([hidden])) .cell {
+        background: var(--table-row-alt-bg);
+      }
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      color: var(--pill-fg-on-dark);
+      font-size: 0.8rem;
+      text-align: center;
+    }
+
+    .pill.dependency {
+      background-color: var(--pill-dependency-bg);
+    }
+
+    .pill.transitive {
+      background-color: var(--pill-transitive-bg);
+    }
+
+    .pill.devDependency {
+      background-color: var(--pill-dev-bg);
+      color: var(--pill-dev-fg);
+    }
+
+    .type-cell {
+      white-space: nowrap;
+      gap: 5px;
+    }
+
+    .unknown-license {
+      color: var(--unknown-license-fg);
+      font-weight: bold;
+    }
+
+    a {
+      color: var(--link-color);
+    }
+
+    :focus-visible {
+      outline: 2px solid var(--focus-ring);
+      outline-offset: 2px;
+      border-radius: 2px;
+    }
+
+    dependency-tree {
+      display: block;
+      padding-top: 0.5rem;
+      padding-left: 1rem;
+    }
+
+    dependency-tree code {
+      display: block;
+    }
+
+    .footnote-ref {
+      margin-left: 0.25rem;
+      font-size: 0.8em;
+      vertical-align: super;
+      text-decoration: none;
+    }
+
+    footer {
+      max-width: var(--container-width);
+      margin: 2rem auto 0;
+      padding-top: 1rem;
+      border-top: 1px solid var(--muted-border);
+    }
+
+    .footnotes h2 {
+      font-size: 1rem;
+      margin: 0 0 0.75rem;
+    }
+
+    .footnotes ol {
+      margin: 0;
+      padding-left: 0;
+      list-style-position: outside;
+      font-size: 0.85rem;
+    }
+
+    .footnotes li {
+      margin-bottom: 1rem;
+    }
+
+    .footnotes li::marker {
+      font-weight: bold;
+    }
+
+    .footnotes li.footnote-transitive::marker {
+      content: "\2020  ";
+    }
+
+    .footnotes li.footnote-unknown::marker {
+      content: "\2021  ";
+    }
+
+    .footnote-backref {
+      margin-left: 0.5rem;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>Dependency licenses for {{projectName}}</h1>
+  </header>
+  <main>
+    <form>
+      <fieldset>
+        <legend>Filter by License</legend>
+        <label>
+          <input id="selectAll" type="checkbox" value="ALL" checked />
+          Select All
+        </label>
+        <div id="license-filters" class="license-filters"></div>
+      </fieldset>
+      <fieldset>
+        <legend>Filter by Dependency Type</legend>
+        <div class="dependency-type-filters">
+          <label>
+            <input id="filterDependency" type="checkbox" value="dependency" checked />
+            <span class="pill dependency">dependencies</span>
+            <span id="dependencyCount" class="count-badge"></span>
+          </label>
+          <label>
+            <input id="filterDevDependency" type="checkbox" value="devDependency" checked />
+            <span class="pill devDependency">devDependencies</span>
+            <span id="devDependencyCount" class="count-badge"></span>
+          </label>
+          <label>
+            <input id="filterTransitive" type="checkbox" value="transitive" checked />
+            <span class="pill transitive">transitive</span> <span id="transitiveCount" class="count-badge"></span>
+            <a id="ref-transitive" class="footnote-ref" href="#fn-transitive"
+              aria-label="See transitive dependency note">&#8224;</a>
+          </label>
+        </div>
+      </fieldset>
+    </form>
+
+    <div class="license-table" role="table" aria-label="Dependency licenses">
+      <div class="header-row" role="row">
+        <div class="cell" role="columnheader">Package <button type="button" id="toggle-details"
+            aria-expanded="false">Expand all details</button></div>
+        <div class="cell" role="columnheader">Version</div>
+        <div class="cell" role="columnheader">License</div>
+        <div class="cell" role="columnheader">Type</div>
+      </div>
+    </div>
+  </main>
+  <footer class="footnotes" aria-labelledby="footnotes-title">
+    <h2 id="footnotes-title">Notes</h2>
+    <ol>
+      <li id="fn-transitive" class="footnote-transitive">
+        Transitive dependencies are packages that your direct dependencies rely on. They can also be called indirect
+        dependencies. For example, if your project depends on package A, and package A depends on package B, then
+        package B is a transitive dependency of your project.
+        <a class="footnote-backref" href="#ref-transitive" aria-label="Back to transitive reference">Back to reference</a>
+      </li>
+      <li id="fn-unknown" class="footnote-unknown">
+        An <strong>UNKNOWN</strong> license means that the tool could not determine the license for that package. This
+        can happen when package metadata is missing or incomplete. Investigate these packages individually using the
+        links in the Version column.
+        <a class="footnote-backref" href="#ref-unknown" aria-label="Back to UNKNOWN reference">Back to reference</a>
+      </li>
+    </ol>
+  </footer>
+  <script>
+    const UNKNOWN_LICENSE = "UNKNOWN";
+
+    /** @type {Record<string, number>} */
+    let licenseCount = { MIT: 12, "Apache-2.0": 8, "GPL-3.0": 3, UNKNOWN: 5 };
+    /* {{licenseCount}} */
+
+    let licenseData = [
+      {
+        name: "@11ty/eleventy",
+        license: "MIT",
+        version: "3.1.2",
+        type: "dependency",
+        trees: [["@11ty/eleventy@3.1.2"]],
+      },
+      {
+        name: "depd",
+        license: "MIT",
+        version: "2.0.0",
+        type: "transitive",
+        trees: [
+          ["express@4.19.2", "body-parser@1.20.2", "depd@2.0.0"],
+          ["express@4.19.2", "depd@2.0.0"],
+          ["express@4.19.2", "http-errors@2.0.0", "depd@2.0.0"],
+          ["express@4.19.2", "send@0.18.0", "depd@2.0.0"],
+        ],
+      },
+    ];
+    /* {{licenseData}} */
+
+    /**
+     * `<license-filter name="MIT" count="12">` — one license filter checkbox.
+     *
+     * Reads `name` and `count` once when first connected. Dispatches a bubbling
+     * `filter-change` CustomEvent when toggled. Exposes `.checked` for the
+     * coordinator to read during filtering.
+     */
+    class LicenseFilter extends HTMLElement {
+      static template = (() => {
+        const t = document.createElement("template");
+        t.innerHTML = `
+            <label>
+              <input type="checkbox" checked />
+              <span class="license-name"></span>
+              <span class="license-count count-badge"></span>
+            </label>
+          `;
+        return t;
+      })();
+
+      connectedCallback() {
+        if (this._built) return;
+        this.replaceChildren(LicenseFilter.template.content.cloneNode(true));
+        const name = this.getAttribute("name") ?? "";
+        const count = this.getAttribute("count") ?? "";
+        this.querySelector("label").className =
+          name === UNKNOWN_LICENSE ? "unknown-license" : "";
+        this._input = this.querySelector("input");
+        this._input.value = name;
+        this._input.addEventListener("change", () => {
+          this.dispatchEvent(new CustomEvent("filter-change", { bubbles: true }));
+        });
+        this.querySelector(".license-name").textContent = name;
+        this.querySelector(".license-count").textContent = count;
+
+        if (name === UNKNOWN_LICENSE) {
+          const noteRef = document.createElement("a");
+          noteRef.id = "ref-unknown";
+          noteRef.className = "footnote-ref";
+          noteRef.href = "#fn-unknown";
+          noteRef.setAttribute("aria-label", "See UNKNOWN license note");
+          noteRef.textContent = "\u2021";
+          this.querySelector("label").appendChild(noteRef);
+        }
+        this._built = true;
+      }
+
+      /** @returns {boolean} */
+      get checked() {
+        return this._input.checked;
+      }
+
+      /** @param {boolean} v */
+      set checked(v) {
+        this._input.checked = v;
+      }
+
+      /** @returns {string} */
+      get name() {
+        return this.getAttribute("name") ?? "";
+      }
+    }
+    customElements.define("license-filter", LicenseFilter);
+
+    /**
+     * `<dependency-tree>` — renders an indented dependency path tree.
+     *
+     * Receives data via the `.trees` property: an array of arrays of strings,
+     * where each inner array is one path from a top-level dep down to the package.
+     */
+    class DependencyTree extends HTMLElement {
+      connectedCallback() {
+        if (this._trees) this.render();
+      }
+
+      /** @param {string[][]} value */
+      set trees(value) {
+        this._trees = value;
+        if (this.isConnected) this.render();
+      }
+
+      get trees() {
+        return this._trees;
+      }
+
+      render() {
+        const frag = document.createDocumentFragment();
+        this._trees.forEach((tree, treeIndex) => {
+          if (treeIndex > 0) frag.appendChild(document.createElement("hr"));
+          tree.forEach((item, i) => {
+            const code = document.createElement("code");
+            code.style.paddingLeft = `${i * 20}px`;
+            code.textContent = item;
+            frag.appendChild(code);
+          });
+        });
+        this.replaceChildren(frag);
+      }
+    }
+    customElements.define("dependency-tree", DependencyTree);
+
+    /**
+     * `<license-link expr="(MIT OR Apache-2.0)">` — renders an SPDX license
+     * expression as one or more links to https://spdx.org/licenses/.
+     *
+     * Handles common expressions: bare ids (MIT), grouped (BSD-2-Clause OR MIT),
+     * conjunctions (MIT AND CC0-1.0), exceptions (GPL-2.0+ WITH Bison-exception-2.2).
+     * Nested parentheses fall back to a single link to the SPDX listing — keeps
+     * this dependency-free (no spdx-expression-parse).
+     */
+    class LicenseLink extends HTMLElement {
+      static observedAttributes = ["expr"];
+      static OPERATORS = ["AND", "OR", "WITH"];
+      static SPLIT_RE = new RegExp(
+        `\\s+(${LicenseLink.OPERATORS.join("|")})\\s+`,
+        "g"
+      );
+
+      connectedCallback() {
+        this.render();
+      }
+
+      attributeChangedCallback() {
+        if (this.isConnected) this.render();
+      }
+
+      render() {
+        this.replaceChildren(
+          ...LicenseLink.parse(this.getAttribute("expr") ?? "")
+        );
+      }
+
+      /**
+       * @param {string} expr
+       * @returns {Node[]}
+       */
+      static parse(expr) {
+        if (
+          !expr ||
+          expr === UNKNOWN_LICENSE ||
+          expr.includes("SEE LICENSE") ||
+          expr === "UNLICENSED"
+        ) {
+          return [document.createTextNode(expr)];
+        }
+        if (expr.startsWith("(") && expr.endsWith(")")) {
+          const inner = expr.slice(1, -1);
+          if (inner.includes("(")) {
+            return [LicenseLink.makeLink(expr, "https://spdx.org/licenses/")];
+          }
+          return inner
+            .split(LicenseLink.SPLIT_RE)
+            .filter((x) => !!x.trim())
+            .map((part) => {
+              part = part.trim();
+              if (LicenseLink.OPERATORS.includes(part)) {
+                return document.createTextNode(` ${part} `);
+              }
+              return LicenseLink.makeLink(
+                part,
+                `https://spdx.org/licenses/${part}.html`
+              );
+            });
+        }
+        return [
+          LicenseLink.makeLink(expr, `https://spdx.org/licenses/${expr}.html`),
+        ];
+      }
+
+      /**
+       * @param {string} text
+       * @param {string} href
+       * @returns {HTMLAnchorElement}
+       */
+      static makeLink(text, href) {
+        const a = document.createElement("a");
+        a.target = "_blank";
+        a.rel = "noreferrer";
+        a.href = href;
+        a.textContent = text;
+        return a;
+      }
+    }
+    customElements.define("license-link", LicenseLink);
+
+    /**
+     * `<license-row>` — one row in the licenses table.
+     *
+     * Set `.data` to a license info object to render. Reflects `data-license`
+     * and `data-type` for filtering. Hide via the native `hidden` attribute
+     * (the parent grid CSS recognises `[hidden]`).
+     *
+     * @typedef {{
+     *   name: string,
+     *   license: string,
+     *   version: string,
+     *   type: 'dependency'|'devDependency'|'transitive',
+     *   trees: string[][]
+     * }} LicenseInfo
+     */
+    class LicenseRow extends HTMLElement {
+      static template = (() => {
+        const t = document.createElement("template");
+        t.innerHTML = `
+            <div class="cell pkg-name" role="cell">
+              <details>
+                <summary></summary>
+                <dependency-tree></dependency-tree>
+              </details>
+            </div>
+            <div class="cell pkg-version" role="cell">
+              <a class="registry-link" target="_blank" rel="noreferrer"></a>
+            </div>
+            <div class="cell" role="cell">
+              <license-link></license-link>
+            </div>
+            <div class="cell type-cell" role="cell">
+              <span class="pill"></span>
+            </div>
+          `;
+        return t;
+      })();
+
+      connectedCallback() {
+        if (!this._built) {
+          this.setAttribute("role", "row");
+          this.replaceChildren(LicenseRow.template.content.cloneNode(true));
+          this._built = true;
+        }
+        if (this._data) this.update();
+      }
+
+      /** @param {LicenseInfo} info */
+      set data(info) {
+        this._data = info;
+        if (this._built) this.update();
+      }
+
+      get data() {
+        return this._data;
+      }
+
+      set detailsOpen(open) {
+        this.querySelector("details").open = open;
+      }
+
+      update() {
+        const info = this._data;
+        this.dataset.license = info.license;
+        this.dataset.type = info.type;
+
+        // package name cell
+        // - details summary text is the package name
+        this.querySelector("summary").textContent = info.name;
+        // - details content is the dependency tree(s)
+        this.querySelector("dependency-tree").trees = info.trees;
+
+        // version column cell
+        const registryLink = this.querySelector(".registry-link");
+        registryLink.href = `https://www.npmjs.com/package/${info.name}/v/${info.version}/`;
+        registryLink.setAttribute("aria-label", `npm page for ${info.name}`);
+        this.querySelector(".pkg-version a").textContent = info.version;
+
+        // license column cell
+        this.querySelector("license-link").setAttribute("expr", info.license);
+
+        // type column cell
+        const pill = this.querySelector(".pill");
+        pill.className = `pill ${info.type}`;
+        pill.textContent = info.type;
+      }
+    }
+    customElements.define("license-row", LicenseRow);
+
+
+    const $ = document.querySelector.bind(document);
+
+    const dependencyCount = licenseData.filter((i) => i.type === "dependency").length;
+    const devDependencyCount = licenseData.filter((i) => i.type === "devDependency").length;
+    const transitiveCount = licenseData.filter((i) => i.type === "transitive").length;
+
+    function debounce(func, wait) {
+      let timeout;
+      return function (...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func(...args), wait);
+      };
+    }
+
+    function filterRows() {
+      const checkedLicenses = new Set(
+        Array.from(document.querySelectorAll("license-filter"))
+          .filter((f) => f.checked)
+          .map((f) => f.name)
+      );
+      const showProd = $("#filterDependency").checked;
+      const showDev = $("#filterDevDependency").checked;
+      const showTransitive = $("#filterTransitive").checked;
+
+      requestAnimationFrame(() => {
+        document.querySelectorAll("license-row").forEach((row) => {
+          const { license, type } = row.dataset;
+          const typeAllowed =
+            (showProd && type === "dependency") ||
+            (showDev && type === "devDependency") ||
+            (showTransitive && type === "transitive");
+          row.hidden = !(license && checkedLicenses.has(license) && typeAllowed);
+        });
+      });
+    }
+
+    const onFilterChange = debounce(filterRows, 100);
+
+    function renderFilters() {
+      const container = $("#license-filters");
+      const unknownCount = licenseCount[UNKNOWN_LICENSE] ?? 0;
+      if (unknownCount === 0) {
+        document.querySelector("#fn-unknown")?.remove();
+      }
+      // sort licenseCount by value desc, then key asc
+      const sortedLicenses = Object.entries(licenseCount).sort((a, b) => {
+        const countDiff = b[1] - a[1];
+        if (countDiff !== 0) return countDiff;
+        return a[0].localeCompare(b[0]);
+      });
+      for (const [name, count] of sortedLicenses) {
+        const filter = document.createElement("license-filter");
+        filter.setAttribute("name", name);
+        filter.setAttribute("count", count);
+        container.appendChild(filter);
+      }
+      $("#dependencyCount").textContent = dependencyCount;
+      $("#devDependencyCount").textContent = devDependencyCount;
+      $("#transitiveCount").textContent = transitiveCount;
+    }
+
+    function renderRows() {
+      const table = $(".license-table");
+      for (const info of licenseData) {
+        const row = document.createElement("license-row");
+        table.appendChild(row);
+        row.data = info;
+      }
+    }
+
+    renderFilters();
+    renderRows();
+
+    function syncToggleButton() {
+      const anyOpen = Array.from(document.querySelectorAll("license-row details")).some(
+        (d) => d.open
+      );
+      const btn = $('#toggle-details');
+      btn.setAttribute('aria-expanded', String(anyOpen));
+      btn.textContent = anyOpen ? 'Collapse all details' : 'Expand all details';
+    }
+
+    $("#license-filters").addEventListener("filter-change", onFilterChange);
+    $("#filterDependency").addEventListener("change", onFilterChange);
+    $("#filterDevDependency").addEventListener("change", onFilterChange);
+    $("#filterTransitive").addEventListener("change", onFilterChange);
+    $("#selectAll").addEventListener("change", (e) => {
+      document.querySelectorAll("license-filter").forEach((f) => {
+        f.checked = e.target.checked;
+      });
+      onFilterChange();
+    });
+    $('#toggle-details').addEventListener("click", () => {
+      const anyOpen = Array.from(document.querySelectorAll("license-row details")).some(
+        (d) => d.open
+      );
+      const newOpen = !anyOpen;
+      document.querySelectorAll("license-row").forEach((row) => {
+        row.detailsOpen = newOpen;
+      });
+      syncToggleButton();
+    });
+    $(".license-table").addEventListener("toggle", syncToggleButton, { capture: true });
+  </script>
+</body>
+
+</html>
