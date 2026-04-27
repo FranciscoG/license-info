@@ -25,10 +25,9 @@
       legend {
         font-weight: bold;
       }
-
       .license-filters {
-        column-count: 3;
-        column-gap: 20px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
         border-top: 1px solid #ccc;
         padding-top: 7px;
       }
