@@ -20,7 +20,7 @@ npx license-info --open --output=./report.html
 
 | Flag | Description | Default |
 | :--- | :--- | :--- |
-| `--open`| Automatically opens HTML report in your default browser | Does not open if ommitted |
+| `--open`| Automatically opens HTML report in your default browser | Does not open if omitted |
 | `--output` | Set the name and location of the generated report | `./license-report.html` |
 
 ## Development
