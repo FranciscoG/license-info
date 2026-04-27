@@ -18,9 +18,12 @@ npx license-info --open --output=./report.html
 
 | Flag | Description | Default |
 | :--- | :--- | :--- |
-| `--open`| Automatically opens HTML report in your default browser | Does not open |
+| `--open`| Automatically opens HTML report in your default browser | Does not open if ommitted |
 | `--output` | Set the name and location of the generated report | `./license-report.html` |
 
+## Development
+
+Requires Node 20+ in development because I'm using the built-in Node test runners that become stable in Node v20.
 
 ## Contributing
 
